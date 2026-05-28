@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ci-cd-demo
+    env: node
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
