@@ -115,7 +115,7 @@ app.get('/', (req, res) => {
       </div>
       <div class="info-box">
         <div class="label">Cobertura</div>
-        <div class="value" style="color:#bc8cff">100%</div>
+        <div class="value" style="color:#bccff">100%</div>
       </div>
     </div>
   </div>
