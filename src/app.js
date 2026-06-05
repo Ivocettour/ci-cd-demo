@@ -2,6 +2,13 @@ const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'CI/CD Demo API'
+  });
+});
+
+app.get('/home', (req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -115,7 +122,7 @@ app.get('/', (req, res) => {
       </div>
       <div class="info-box">
         <div class="label">Cobertura</div>
-        <div class="value" style="color:#bccff">100%</div>
+        <div class="value" style="color:#bc8cff">100%</div>
       </div>
     </div>
   </div>
@@ -126,5 +133,6 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
+
 
 module.exports = app;
