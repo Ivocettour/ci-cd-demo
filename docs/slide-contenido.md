@@ -12,7 +12,7 @@ Pipeline CI/CD para API Node.js + Express
 - Node test runner + Supertest: pruebas
 - ESLint: analisis estatico
 - Docker: imagen reproducible
-- Render: entrega continua
+- Vercel: entrega continua
 - OpenAPI: contrato de API
 
 ## Diagrama resumido
@@ -23,13 +23,13 @@ flowchart LR
   Repo --> CI["Actions"]
   CI --> QA["ESLint + Tests"]
   QA --> Img["Docker image"]
-  Img --> Render["Render"]
-  Render --> FB["Feedback"]
+  Img --> Vercel["Vercel"]
+  Vercel --> FB["Feedback"]
 ```
 
 ## Guion oral breve
 
-"Este proyecto demuestra un flujo CI/CD completo sobre una API Express. Cada push o pull request instala dependencias con npm ci, corre analisis estatico con ESLint, ejecuta pruebas reales con node:test y Supertest, valida el build local y construye una imagen Docker. En la rama main, si todo pasa, GitHub Actions dispara el deploy en Render mediante un secreto. Ademas, el contrato OpenAPI queda versionado y expuesto por la propia API, conectando especificacion, codigo y pruebas."
+"Este proyecto demuestra un flujo CI/CD completo sobre una API Express. Cada push o pull request instala dependencias con npm ci, corre analisis estatico con ESLint, ejecuta pruebas reales con node:test y Supertest, valida el build local y construye una imagen Docker. En la rama main, si todo pasa, GitHub Actions despliega en Vercel usando secretos configurados en GitHub. Ademas, el contrato OpenAPI queda versionado y expuesto por la propia API, conectando especificacion, codigo y pruebas."
 
 ## Criterios de aceptacion vinculados al codigo
 

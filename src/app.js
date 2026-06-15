@@ -109,7 +109,7 @@ app.get('/home', (req, res) => {
   <main class="card">
     <div class="badge"><span class="pulse"></span>deployed</div>
     <h1>CI/CD <span>Pipeline</span> Demo</h1>
-    <p class="subtitle">Desplegado automaticamente con GitHub Actions y Render</p>
+    <p class="subtitle">Desplegado automaticamente con GitHub Actions y Vercel</p>
 
     <div class="pipeline" aria-label="Etapas del pipeline">
       <div class="step green">Lint</div>

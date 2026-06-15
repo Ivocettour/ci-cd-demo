@@ -11,7 +11,7 @@ API Node.js + Express preparada para demostrar Integracion Continua y Entrega Co
 - OpenAPI como contrato de API
 - Docker y Docker Compose
 - GitHub Actions para CI/CD
-- Render como entorno de entrega simple
+- Vercel como entorno de entrega simple
 
 ## Instalacion
 
@@ -41,7 +41,7 @@ npm start
 Endpoints utiles:
 
 - `GET /`: estado general de la API.
-- `GET /health`: health check para CI/CD y Render.
+- `GET /health`: health check para CI/CD y Vercel.
 - `GET /home`: vista HTML simple de demostracion.
 - `GET /openapi.json`: contrato OpenAPI.
 
@@ -89,7 +89,7 @@ Etapas:
 6. Build local con `npm run build`.
 7. Build y smoke test de imagen Docker.
 8. Publicacion del contrato OpenAPI y export de imagen Docker como artefactos.
-9. Deploy a Render en push a `main`.
+9. Deploy a Vercel en push a `main`.
 
 ```mermaid
 flowchart LR
@@ -99,24 +99,27 @@ flowchart LR
   Analysis --> Tests["Tests node:test/Supertest"]
   Tests --> Build["Build local + Docker"]
   Build --> Artifact["Artefactos: contrato + imagen"]
-  Artifact --> Delivery["Render"]
+  Artifact --> Delivery["Vercel"]
   Delivery --> Feedback["Feedback: Actions + health check"]
 ```
 
 ## Despliegue
 
-La entrega continua queda configurada para Render:
+La entrega continua queda configurada para Vercel:
 
-- `render.yaml` define el servicio web, build command, start command y health check.
-- GitHub Actions dispara un deploy hook solo en push a `main`.
+- `vercel.json` define la instalacion, build y rewrite hacia la funcion serverless.
+- `api/index.js` adapta la misma app Express para Vercel.
+- GitHub Actions despliega con Vercel CLI solo en push a `main`.
 
 Secreto necesario en GitHub:
 
 | Secret | Descripcion |
 | --- | --- |
-| `RENDER_DEPLOY_HOOK_URL` | URL privada del Deploy Hook de Render. |
+| `VERCEL_TOKEN` | Token de Vercel para desplegar desde GitHub Actions. |
+| `VERCEL_ORG_ID` | ID del equipo o usuario de Vercel. |
+| `VERCEL_PROJECT_ID` | ID del proyecto de Vercel. |
 
-Si el secreto no existe, el workflow deja una advertencia y omite el deploy. No se incluyen credenciales en el repositorio.
+Si esos secretos no existen, el workflow deja una advertencia y omite el deploy. No se incluyen credenciales en el repositorio.
 
 ## Estrategia de ramas
 
@@ -137,7 +140,7 @@ El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. L
 3. Mostrar `__tests__/app.test.js`: "Las pruebas validan comportamiento real con Supertest".
 4. Ejecutar `npm run build`: "Esta compuerta local corre analisis y tests".
 5. Mostrar `.github/workflows/ci.yml`: "El mismo flujo corre en push y pull request; Docker genera el artefacto".
-6. Mostrar `render.yaml`: "Render recibe el deploy mediante un hook secreto configurado en GitHub".
+6. Mostrar `vercel.json`: "Vercel publica la app Express mediante una funcion serverless y secretos de GitHub".
 
 ## Estado esperado
 
