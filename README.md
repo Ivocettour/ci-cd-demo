@@ -4,7 +4,7 @@ API Node.js + Express preparada para demostrar Integracion Continua y Entrega Co
 
 ## Tecnologias
 
-- Node.js 18 o superior
+- Node.js 20.x
 - Express
 - Node test runner y Supertest para pruebas automatizadas
 - ESLint para analisis estatico
@@ -82,7 +82,7 @@ El workflow esta en `.github/workflows/ci.yml` y corre en:
 Etapas:
 
 1. Checkout del repositorio.
-2. Setup de Node.js 18 con cache npm.
+2. Setup de Node.js 20 con cache npm.
 3. Instalacion con `npm ci`.
 4. Analisis estatico con ESLint.
 5. Tests con `node:test` y Supertest.
