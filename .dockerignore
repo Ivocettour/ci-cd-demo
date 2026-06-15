@@ -1,0 +1,9 @@
+node_modules
+coverage
+.git
+.github
+.env
+npm-debug.log*
+Dockerfile
+docker-compose.yml
+docs/slide-contenido.md

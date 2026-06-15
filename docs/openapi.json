@@ -1,0 +1,96 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CI/CD Demo API",
+    "description": "Contrato de API para demostrar Spec Driven Development en el pipeline.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Entorno local"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Estado general de la API",
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check para CI/CD y plataformas de despliegue",
+        "responses": {
+          "200": {
+            "description": "Servicio saludable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Contrato OpenAPI de la aplicacion",
+        "responses": {
+          "200": {
+            "description": "Documento OpenAPI"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RootResponse": {
+        "type": "object",
+        "required": ["status", "message", "version"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "message": {
+            "type": "string",
+            "example": "CI/CD Demo API"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "uptime"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "uptime": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,16 +1,18 @@
-# Stage 1: Build & Test
+# Stage 1: Build and test
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
-RUN npm test
+RUN npm run build
 
 # Stage 2: Production
 FROM node:18-alpine AS production
 WORKDIR /app
+ENV NODE_ENV=production
 COPY package*.json ./
-RUN npm install --omit=dev
-COPY src/ ./src/
+RUN npm ci --omit=dev
+COPY --from=builder /app/src/ ./src/
+COPY --from=builder /app/docs/openapi.json ./docs/openapi.json
 EXPOSE 3000
 CMD ["node", "src/index.js"]

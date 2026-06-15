@@ -1,10 +1,13 @@
 const express = require('express');
+const openApiSpec = require('../docs/openapi.json');
+
 const app = express();
 
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'CI/CD Demo API'
+    message: 'CI/CD Demo API',
+    version: openApiSpec.info.version
   });
 });
 
@@ -14,7 +17,7 @@ app.get('/home', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CI/CDd Pipeline Demo</title>
+  <title>CI/CD Pipeline Demo</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -29,10 +32,10 @@ app.get('/home', (req, res) => {
     .card {
       background: #161b22;
       border: 1px solid #30363d;
-      border-radius: 16px;
+      border-radius: 8px;
       padding: 48px 56px;
       text-align: center;
-      max-width: 520px;
+      max-width: 560px;
       width: 90%;
     }
     .badge {
@@ -69,11 +72,12 @@ app.get('/home', (req, res) => {
       justify-content: center;
       gap: 8px;
       margin-bottom: 36px;
+      flex-wrap: wrap;
     }
     .step {
       background: #21262d;
       border: 1px solid #30363d;
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 10px 14px;
       font-size: 13px;
       font-weight: 600;
@@ -81,57 +85,70 @@ app.get('/home', (req, res) => {
     .step.green { border-color: rgba(63,185,80,0.4); color: #3fb950; }
     .step.blue  { border-color: rgba(88,166,255,0.4); color: #58a6ff; }
     .step.purple{ border-color: rgba(188,140,255,0.4); color: #bc8cff; }
-    .arrow { color: #30363d; font-size: 16px; }
+    .arrow { color: #8b949e; font-size: 16px; }
     .info {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
     .info-box {
       background: #21262d;
       border: 1px solid #30363d;
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 14px 10px;
     }
     .info-box .label { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
     .info-box .value { font-size: 15px; font-weight: 700; }
+    @media (max-width: 520px) {
+      .card { padding: 32px 24px; }
+      .info { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
+  <main class="card">
     <div class="badge"><span class="pulse"></span>deployed</div>
     <h1>CI/CD <span>Pipeline</span> Demo</h1>
-    <p class="subtitle">Desplegado automáticamente con GitHub Actions</p>
+    <p class="subtitle">Desplegado automaticamente con GitHub Actions y Render</p>
 
-    <div class="pipeline">
-      <div class="step green">✅ Test</div>
-      <div class="arrow">→</div>
-      <div class="step blue">🐳 Build</div>
-      <div class="arrow">→</div>
-      <div class="step purple">🚀 Deploy</div>
+    <div class="pipeline" aria-label="Etapas del pipeline">
+      <div class="step green">Lint</div>
+      <div class="arrow">-&gt;</div>
+      <div class="step green">Tests</div>
+      <div class="arrow">-&gt;</div>
+      <div class="step blue">Docker Build</div>
+      <div class="arrow">-&gt;</div>
+      <div class="step purple">Deploy</div>
     </div>
 
     <div class="info">
       <div class="info-box">
-        <div class="label">Versión</div>
-        <div class="value" style="color:#58a6ff">v1.0.0</div>
+        <div class="label">Version</div>
+        <div class="value" style="color:#58a6ff">v${openApiSpec.info.version}</div>
       </div>
       <div class="info-box">
         <div class="label">Estado</div>
         <div class="value" style="color:#3fb950">Online</div>
       </div>
       <div class="info-box">
-        <div class="label">Cobertura</div>
-        <div class="value" style="color:#bc8cff">100%</div>
+        <div class="label">Contrato</div>
+        <div class="value" style="color:#bc8cff">OpenAPI</div>
       </div>
     </div>
-  </div>
+  </main>
 </body>
 </html>`);
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime()
+  });
+});
+
+app.get('/openapi.json', (req, res) => {
+  res.json(openApiSpec);
 });
 
 module.exports = app;

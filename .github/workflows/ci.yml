@@ -1,0 +1,91 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality, tests and local build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run static analysis
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run local build command
+        run: npm run build
+
+      - name: Upload API contract artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contract
+          path: docs/openapi.json
+          if-no-files-found: error
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ci-cd-demo:${{ github.sha }} .
+
+      - name: Smoke test Docker image
+        run: |
+          docker run --rm -d -p 3000:3000 --name ci-cd-demo-smoke ci-cd-demo:${{ github.sha }}
+          trap "docker stop ci-cd-demo-smoke" EXIT
+          sleep 3
+          curl --fail http://localhost:3000/health
+
+      - name: Export Docker image artifact
+        run: docker save ci-cd-demo:${{ github.sha }} -o ci-cd-demo-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: ci-cd-demo-image.tar
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL is not configured; deploy was skipped."
+            exit 0
+          fi
+          curl --fail --request POST "$RENDER_DEPLOY_HOOK_URL"
