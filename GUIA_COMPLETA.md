@@ -250,11 +250,125 @@ Herramientas:
 - `node:assert/strict`: aserciones.
 - `supertest`: permite probar endpoints HTTP sin levantar manualmente el servidor.
 
-Pruebas incluidas:
+### Que tipo de tests son
+
+Las pruebas de este proyecto son principalmente tests automatizados de API o tests de endpoints HTTP.
+
+No son tests unitarios puros, porque no prueban una funcion aislada sin dependencias. En cambio, cargan la app Express completa desde `src/app.js` y hacen peticiones HTTP simuladas con Supertest.
+
+Tampoco son tests end-to-end completos de navegador, porque no abren Chrome ni prueban una interfaz grafica real. Se ubican en un punto intermedio: validan el comportamiento observable de la API desde afuera, como lo haria un cliente HTTP.
+
+Por eso se pueden describir como:
+
+- Tests de integracion livianos.
+- Tests de API.
+- Tests funcionales de endpoints.
+- Smoke tests automatizados de comportamiento HTTP.
+
+Son ideales para CI/CD porque son rapidos, deterministas y verifican que la aplicacion responda correctamente antes de construir Docker o desplegar.
+
+### Como funcionan tecnicamente
+
+El test importa la app:
+
+```js
+const app = require('../src/app');
+```
+
+Ese archivo exporta la instancia de Express, pero no llama a `app.listen`. Esto es importante porque permite que Supertest pruebe la app en memoria sin ocupar el puerto `3000`.
+
+Supertest hace peticiones como esta:
+
+```js
+const res = await request(app).get('/health');
+```
+
+Despues, `node:assert/strict` valida que la respuesta tenga los valores esperados:
+
+```js
+assert.equal(res.statusCode, 200);
+assert.equal(res.body.status, 'healthy');
+```
+
+Si una asercion falla, el comando `npm test` termina con error. En GitHub Actions eso corta el pipeline y evita que se avance a Docker o deploy.
+
+### Pruebas incluidas
 
 1. `GET /` responde `200`, `status: ok`, mensaje y version.
 2. `GET /health` responde `200`, `status: healthy` y `uptime` numerico.
 3. `GET /openapi.json` expone el contrato OpenAPI y contiene rutas importantes.
+
+### Detalle de cada prueba
+
+#### 1. Test del endpoint principal `GET /`
+
+Objetivo:
+
+Validar que la API principal este disponible y devuelva una respuesta JSON coherente.
+
+Verifica:
+
+- Codigo HTTP `200`.
+- Campo `status` igual a `ok`.
+- Campo `message` igual a `CI/CD Demo API`.
+- Campo `version` igual a la version declarada en `docs/openapi.json`.
+
+Importancia:
+
+Este test confirma que la API responde y que existe consistencia entre el codigo y el contrato OpenAPI.
+
+#### 2. Test de health check `GET /health`
+
+Objetivo:
+
+Validar que el servicio tenga un endpoint simple para comprobar si esta vivo.
+
+Verifica:
+
+- Codigo HTTP `200`.
+- Campo `status` igual a `healthy`.
+- Campo `uptime` de tipo numerico.
+
+Importancia:
+
+Este endpoint sirve para monitoreo, smoke tests y validacion de despliegue. Tambien se usa en Docker para comprobar que el contenedor responde correctamente.
+
+#### 3. Test del contrato `GET /openapi.json`
+
+Objetivo:
+
+Validar que la especificacion OpenAPI este publicada por la propia aplicacion.
+
+Verifica:
+
+- Codigo HTTP `200`.
+- Version OpenAPI `3.0.3`.
+- Existencia de la ruta `/` en el contrato.
+- Existencia de la ruta `/health` en el contrato.
+
+Importancia:
+
+Este test conecta la practica de Spec Driven Development con el pipeline. No solo se prueba que la API funcione, sino tambien que publique su contrato.
+
+### Que cubren y que no cubren
+
+Cubren:
+
+- Respuestas HTTP de endpoints criticos.
+- Codigos de estado.
+- Campos principales del JSON.
+- Relacion entre la API y el contrato OpenAPI.
+- Health check usado en CI/CD.
+
+No cubren:
+
+- Pruebas visuales de la pagina `/home`.
+- Pruebas de carga o rendimiento.
+- Pruebas de seguridad avanzadas.
+- Pruebas end-to-end con navegador real.
+- Validacion exhaustiva de todo el schema OpenAPI.
+
+Para el alcance de la evaluacion CI/CD, son suficientes porque demuestran una verificacion automatica real, rapida y repetible.
 
 Ejecutar:
 
@@ -270,7 +384,19 @@ pass 3
 fail 0
 ```
 
-Estas pruebas corren localmente, en GitHub Actions y dentro del build Docker.
+Como se interpretan los resultados:
+
+- `tests 3`: se ejecutaron tres casos de prueba.
+- `pass 3`: los tres pasaron correctamente.
+- `fail 0`: no hubo fallos.
+
+Estas pruebas corren en tres lugares:
+
+1. Localmente, cuando el desarrollador ejecuta `npm test`.
+2. En GitHub Actions, dentro del job `quality`.
+3. Dentro del build Docker, porque el Dockerfile ejecuta `npm run build`.
+
+Esto garantiza que el mismo comportamiento se valida antes de integrar, antes de empaquetar y antes de desplegar.
 
 ---
 
