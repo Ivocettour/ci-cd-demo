@@ -107,7 +107,7 @@ flowchart LR
 
 La entrega continua queda configurada para Vercel:
 
-- `vercel.json` define la instalacion, build y rewrite hacia la funcion serverless.
+- `vercel.json` define la instalacion, build, salida `public` y rewrite hacia la funcion serverless.
 - `api/index.js` adapta la misma app Express para Vercel.
 - GitHub Actions despliega con Vercel CLI solo en push a `main`.
 
