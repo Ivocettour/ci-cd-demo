@@ -1,179 +1,731 @@
-# 🚀 Proyecto CI/CD — Guía Completa de Implementación
+# Proyecto CI/CD - Guia completa de implementacion
 
-## 1. ARQUITECTURA DEL PROYECTO
+Esta guia explica el proyecto tal como esta actualmente: una API Node.js + Express con pruebas automatizadas, analisis estatico, build local, Docker, GitHub Actions, contrato OpenAPI y despliegue continuo en Vercel.
 
-```
-GitHub Push → GitHub Actions → Tests (Jest) → Build (Docker) → Deploy (Render)
-```
-
-**Herramientas utilizadas:**
-- **GitHub** — Repositorio de código
-- **GitHub Actions** — Servidor de Integración Continua
-- **Node.js + Express** — Aplicación backend simple
-- **Jest + Supertest** — Tests automatizados
-- **Docker** — Empaquetado y build
-- **Render** — Deploy automático en la nube (gratis)
+El objetivo del proyecto es demostrar un flujo real de Integracion Continua y Entrega Continua sin depender de pasos manuales repetitivos.
 
 ---
 
-## 2. ESTRUCTURA DE CARPETAS
+## 1. Arquitectura del proyecto
 
+Flujo general:
+
+```text
+Desarrollador
+  -> GitHub
+  -> GitHub Actions
+  -> ESLint
+  -> Tests con node:test + Supertest
+  -> Build local
+  -> Build de imagen Docker
+  -> Artefactos
+  -> Deploy en Vercel
+  -> Feedback por Actions y URL publica
 ```
+
+Diagrama Mermaid:
+
+```mermaid
+flowchart LR
+  Dev["Desarrollador"] --> Repo["Repositorio GitHub"]
+  Repo --> CI["GitHub Actions"]
+  CI --> Lint["Analisis ESLint"]
+  Lint --> Tests["Tests node:test + Supertest"]
+  Tests --> Build["Build local"]
+  Build --> Docker["Docker image"]
+  Docker --> Artifacts["Artefactos"]
+  Artifacts --> Vercel["Vercel Production"]
+  Vercel --> Feedback["Feedback: logs, estado y URL"]
+```
+
+Herramientas utilizadas:
+
+- GitHub: repositorio remoto y Pull Requests.
+- GitHub Actions: pipeline de CI/CD.
+- Node.js 20.x: runtime principal.
+- Express: framework HTTP de la API.
+- node:test: test runner nativo de Node.js.
+- Supertest: pruebas HTTP contra la app Express.
+- ESLint: analisis estatico de codigo.
+- OpenAPI: contrato versionado de la API.
+- Docker: empaquetado y validacion de imagen reproducible.
+- Docker Compose: ejecucion local de la imagen.
+- Vercel: entorno de entrega continua en produccion.
+
+---
+
+## 2. Estructura de carpetas
+
+```text
 ci-cd-demo/
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml          ← Pipeline CI/CD
-├── src/
-│   ├── app.js                 ← Lógica de la app
-│   └── index.js               ← Punto de entrada
-├── __tests__/
-│   └── app.test.js            ← Tests automatizados
-├── Dockerfile                 ← Imagen Docker
-├── render.yaml                ← Config de deploy
-├── package.json               ← Dependencias Node.js
-└── .gitignore
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml              Pipeline CI/CD
+|-- api/
+|   `-- index.js                Adaptador serverless para Vercel
+|-- docs/
+|   |-- openapi.json            Contrato OpenAPI
+|   `-- slide-contenido.md      Contenido para una diapositiva
+|-- public/
+|   `-- index.html              Salida estatica requerida por Vercel
+|-- src/
+|   |-- app.js                  App Express y rutas
+|   `-- index.js                Entrada local con app.listen
+|-- __tests__/
+|   `-- app.test.js             Tests automatizados HTTP
+|-- .dockerignore
+|-- .env.example
+|-- .gitignore
+|-- Dockerfile
+|-- docker-compose.yml
+|-- eslint.config.js
+|-- package.json
+|-- package-lock.json
+|-- README.md
+|-- vercel.json
+`-- GUIA_COMPLETA.md
 ```
 
 ---
 
-## 3. PASOS EXACTOS PARA IMPLEMENTARLO
+## 3. Aplicacion
 
-### Paso 1 — Crear el repositorio en GitHub
-```bash
-# En tu máquina local
-git init ci-cd-demo
-cd ci-cd-demo
-# Copiar todos los archivos del proyecto aquí
+La aplicacion es una API Express simple.
+
+Archivo principal de la app:
+
+```text
+src/app.js
 ```
 
-### Paso 2 — Instalar dependencias y probar localmente
+Entrada para ejecucion local:
+
+```text
+src/index.js
+```
+
+Adaptador para Vercel:
+
+```text
+api/index.js
+```
+
+La razon de tener `api/index.js` es que Vercel ejecuta funciones serverless desde la carpeta `api`. Ese archivo importa y exporta la misma app Express de `src/app.js`, evitando duplicar logica.
+
+Endpoints disponibles:
+
+| Endpoint | Descripcion |
+| --- | --- |
+| `GET /` | Devuelve estado general de la API. |
+| `GET /health` | Health check usado para verificar que el servicio esta vivo. |
+| `GET /home` | Pagina HTML simple de demostracion. |
+| `GET /openapi.json` | Contrato OpenAPI publicado por la propia API. |
+
+Ejemplo de respuesta de `/health`:
+
+```json
+{
+  "status": "healthy",
+  "uptime": 12.34
+}
+```
+
+---
+
+## 4. Variables de entorno
+
+Archivo de ejemplo:
+
+```text
+.env.example
+```
+
+Contenido:
+
+```text
+NODE_ENV=development
+PORT=3000
+```
+
+Variables:
+
+| Variable | Uso |
+| --- | --- |
+| `NODE_ENV` | Define el entorno de ejecucion. |
+| `PORT` | Puerto HTTP local. Por defecto se usa `3000`. |
+
+No se versiona `.env` porque puede contener configuracion local o sensible.
+
+---
+
+## 5. Instalacion local
+
+Instalar dependencias desde el lockfile:
+
 ```bash
-npm install
+npm ci
+```
+
+Se usa `npm ci` porque es reproducible y respeta exactamente `package-lock.json`. Es el mismo comando que corre en GitHub Actions y Vercel.
+
+En Windows, si PowerShell bloquea `npm.ps1`, usar:
+
+```bash
+npm.cmd ci
+```
+
+---
+
+## 6. Ejecucion local
+
+Ejecutar la API:
+
+```bash
+npm start
+```
+
+O en Windows:
+
+```bash
+npm.cmd start
+```
+
+Abrir:
+
+```text
+http://localhost:3000/health
+```
+
+Tambien se puede probar:
+
+```text
+http://localhost:3000/
+http://localhost:3000/home
+http://localhost:3000/openapi.json
+```
+
+---
+
+## 7. Scripts del proyecto
+
+Los scripts estan definidos en `package.json`.
+
+| Script | Comando | Que hace |
+| --- | --- | --- |
+| `start` | `node src/index.js` | Levanta la API local. |
+| `dev` | `node src/index.js` | Alias simple para desarrollo. |
+| `lint` | `eslint .` | Ejecuta analisis estatico. |
+| `test` | `node --test __tests__/app.test.js` | Ejecuta tests automatizados. |
+| `build` | `npm run lint && npm test` | Valida lint y tests como compuerta local. |
+
+Comandos recomendados antes de subir cambios:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
+En Windows:
+
+```bash
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
+```
+
+---
+
+## 8. Pruebas automatizadas
+
+Archivo:
+
+```text
+__tests__/app.test.js
+```
+
+Herramientas:
+
+- `node:test`: test runner nativo de Node.
+- `node:assert/strict`: aserciones.
+- `supertest`: permite probar endpoints HTTP sin levantar manualmente el servidor.
+
+Pruebas incluidas:
+
+1. `GET /` responde `200`, `status: ok`, mensaje y version.
+2. `GET /health` responde `200`, `status: healthy` y `uptime` numerico.
+3. `GET /openapi.json` expone el contrato OpenAPI y contiene rutas importantes.
+
+Ejecutar:
+
+```bash
 npm test
 ```
-Deberías ver:
-```
-PASS  __tests__/app.test.js
-  API Tests
-    ✓ GET / returns correct response
-    ✓ GET /health returns healthy
+
+Resultado esperado:
+
+```text
+tests 3
+pass 3
+fail 0
 ```
 
-### Paso 3 — Construir y correr con Docker (local)
-```bash
-docker build -t ci-cd-demo .
-docker run -p 3000:3000 ci-cd-demo
-# Abrir http://localhost:3000
-```
-
-### Paso 4 — Subir a GitHub
-```bash
-git add .
-git commit -m "feat: initial CI/CD setup"
-git remote add origin https://github.com/TU_USUARIO/ci-cd-demo.git
-git push -u origin main
-```
-→ GitHub Actions se dispara automáticamente.
-
-### Paso 5 — Configurar Render (deploy gratuito)
-1. Ir a https://render.com → Sign up con GitHub
-2. New → Web Service → conectar tu repo `ci-cd-demo`
-3. Settings:
-   - **Build Command:** `npm install`
-   - **Start Command:** `node src/index.js`
-4. Copiar el **Deploy Hook URL** de Settings → Deploy Hooks
-5. En GitHub → Settings → Secrets → `RENDER_DEPLOY_HOOK_URL` → pegar la URL
-
-### Paso 6 — Verificar que el pipeline funciona
-```bash
-# Hacer un cambio pequeño
-echo "# Updated" >> README.md
-git add . && git commit -m "test: trigger pipeline"
-git push
-```
-→ Ir a GitHub → Actions → ver el pipeline correr en vivo.
+Estas pruebas corren localmente, en GitHub Actions y dentro del build Docker.
 
 ---
 
-## 4. CÓMO DEMOSTRAR EN VIVO (demo de 5 minutos)
+## 9. Analisis estatico
 
-### Orden recomendado:
+Archivo:
 
-**[0:00 - 0:30] Mostrar la arquitectura** (la diapositiva)
-> "Cada vez que hago push, pasan 3 cosas automáticas: test, build y deploy."
-
-**[0:30 - 1:30] Mostrar el código** (GitHub)
-> "Esta es la app — una API REST minimalista con 2 endpoints."
-> Mostrar `src/app.js` (10 líneas) y `__tests__/app.test.js`
-
-**[1:30 - 2:30] Mostrar el pipeline YAML**
-> "Este archivo `.github/workflows/ci-cd.yml` define los 3 jobs."
-> Señalar: `test → build → deploy` con `needs:`
-
-**[2:30 - 3:30] HACER UN PUSH EN VIVO**
-```bash
-# En la terminal
-echo "// demo push $(date)" >> src/app.js
-git add . && git commit -m "demo: live push for presentation"
-git push
+```text
+eslint.config.js
 ```
-→ Inmediatamente abrir GitHub → Actions y mostrar el pipeline corriendo.
 
-**[3:30 - 4:30] Mostrar el deploy en Render**
-> Abrir https://tu-app.onrender.com en el navegador.
-> Mostrar el JSON: `{"message":"CI/CD Demo API","status":"ok"}`
+ESLint revisa errores comunes como variables no definidas o variables sin usar.
 
-**[4:30 - 5:00] Conclusión**
-> "En menos de 2 minutos, el código pasó de mi máquina a producción, 100% automático."
+Ejecutar:
 
----
+```bash
+npm run lint
+```
 
-## 5. SPEECH PARA LA EXPOSICIÓN
-
-> "Buenos días. Voy a presentar un proyecto de Integración Continua y Despliegue Continuo, lo que en la industria se conoce como CI/CD.
->
-> El objetivo es simple pero poderoso: cada vez que un desarrollador sube código a GitHub, el sistema automáticamente ejecuta los tests, construye la aplicación con Docker, y la despliega en la nube sin intervención humana.
->
-> Las herramientas que elegí son las mismas que usan empresas reales: GitHub Actions como servidor CI, Docker para garantizar que 'funciona en mi máquina' equivale a 'funciona en producción', y Render como plataforma de deployment gratuita.
->
-> La ventaja de este flujo es que si un test falla, el pipeline se detiene y nunca llega código roto a producción. Es la base del desarrollo moderno ágil.
->
-> Ahora les voy a mostrar cómo funciona en tiempo real."
+Si ESLint falla, el pipeline se detiene antes de test, build, Docker y deploy.
 
 ---
 
-## 6. PREGUNTAS TEÓRICAS Y RESPUESTAS
+## 10. Spec Driven Development
 
-**¿Qué diferencia hay entre CI y CD?**
-> CI (Integración Continua) = integrar y testear el código automáticamente en cada push.
-> CD (Despliegue Continuo) = llevar automáticamente ese código validado a producción.
+El proyecto incorpora una capacidad pequena pero real de Spec Driven Development usando OpenAPI.
 
-**¿Por qué usar Docker?**
-> Docker garantiza que el entorno de desarrollo y producción sean idénticos. Elimina el problema de "funciona en mi máquina pero no en el servidor".
+Archivo:
 
-**¿Qué pasa si un test falla?**
-> El pipeline se detiene en el job `test`. Los jobs `build` y `deploy` no corren. El código roto nunca llega a producción.
+```text
+docs/openapi.json
+```
 
-**¿Qué es un workflow de GitHub Actions?**
-> Es un archivo YAML que define jobs y steps que se ejecutan automáticamente ante eventos como un `push` o `pull request`.
+La app lo expone en:
 
-**¿Por qué `needs: test` en el job build?**
-> Es una dependencia explícita. Le dice a GitHub Actions que el job `build` solo puede correr si `test` terminó exitosamente. Así se garantiza el orden y la seguridad del pipeline.
+```text
+GET /openapi.json
+```
 
-**¿Qué es un Deploy Hook?**
-> Es una URL secreta de Render que al recibir un HTTP POST, dispara un nuevo deployment. Funciona como un webhook de deployment.
+El endpoint `/` devuelve la version definida en el contrato:
 
-**¿Qué ventaja tiene esto sobre hacer deploy manual?**
-> Velocidad, consistencia y confiabilidad. No hay error humano, todos los deploys pasan por los mismos tests, y el historial queda documentado automáticamente en GitHub.
+```js
+version: openApiSpec.info.version
+```
+
+Esto vincula:
+
+- especificacion;
+- codigo;
+- pruebas;
+- documentacion.
+
+Por eso, si cambia la version del contrato, la API y los tests ayudan a detectar inconsistencias.
 
 ---
 
-## 7. CÓMO HACERLO PARECER MÁS AVANZADO
+## 11. Docker
 
-- Mostrar el **tab de Actions** con el pipeline corriendo → impacto visual inmediato
-- Decir "jobs paralelos vs secuenciales" aunque sea un pipeline simple
-- Mencionar "si esto fuera producción real, agregaríamos Slack notifications y rollback automático"
-- Mostrar el **coverage report** de Jest: `npm test -- --coverage`
-- Abrir el **log en tiempo real** del deploy en Render
-- Usar el término "artifact" para los reportes de test
-- Mencionar "seguimos GitFlow con branch protection rules"
+Archivos:
+
+```text
+Dockerfile
+.dockerignore
+docker-compose.yml
+```
+
+El `Dockerfile` usa dos etapas:
+
+1. `builder`: instala dependencias, copia el proyecto y ejecuta `npm run build`.
+2. `production`: instala solo dependencias de produccion y copia la app validada.
+
+Build local:
+
+```bash
+docker build -t ci-cd-demo:local .
+```
+
+Ejecutar imagen:
+
+```bash
+docker run --rm -p 3000:3000 ci-cd-demo:local
+```
+
+Probar:
+
+```text
+http://localhost:3000/health
+```
+
+Con Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Bajar el entorno:
+
+```bash
+docker compose down
+```
+
+Docker no reemplaza a Vercel en este proyecto. Se usa para demostrar empaquetado reproducible, build verificable y artefacto dentro del pipeline.
+
+---
+
+## 12. GitHub Actions
+
+Archivo:
+
+```text
+.github/workflows/ci.yml
+```
+
+Eventos que disparan el pipeline:
+
+- push a `main`;
+- pull request hacia `main`.
+
+Jobs:
+
+### 12.1 Quality, tests and local build
+
+Pasos:
+
+1. Checkout del repositorio.
+2. Setup de Node.js 20.
+3. Instalacion con `npm ci`.
+4. Analisis estatico con `npm run lint`.
+5. Tests con `npm test`.
+6. Build local con `npm run build`.
+7. Upload del contrato OpenAPI como artefacto.
+
+### 12.2 Docker image
+
+Depende del job anterior.
+
+Pasos:
+
+1. Build de imagen Docker.
+2. Smoke test HTTP contra `/health`.
+3. Export de imagen con `docker save`.
+4. Upload de imagen Docker como artefacto.
+
+### 12.3 Deploy to Vercel
+
+Depende de Docker.
+
+Condicion:
+
+```text
+solo corre en push a main
+```
+
+Pasos:
+
+1. Checkout.
+2. Instalacion de Vercel CLI.
+3. Validacion de secretos.
+4. `vercel pull`.
+5. `vercel build --prod`.
+6. `vercel deploy --prebuilt --prod`.
+
+Si faltan secretos, el job no rompe el pipeline: muestra una advertencia y omite el deploy.
+
+---
+
+## 13. Vercel
+
+Archivos relacionados:
+
+```text
+vercel.json
+api/index.js
+public/index.html
+```
+
+Configuracion actual en `vercel.json`:
+
+```json
+{
+  "version": 2,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
+    }
+  ]
+}
+```
+
+Explicacion:
+
+- `installCommand`: Vercel instala dependencias con `npm ci`.
+- `buildCommand`: Vercel valida el proyecto con `npm run build`.
+- `outputDirectory`: Vercel espera una carpeta de salida, por eso existe `public`.
+- `rewrites`: todas las rutas llegan a la funcion serverless `api/index.js`.
+
+Configuracion recomendada en Vercel:
+
+- Framework Preset: `Other`.
+- Install Command: `npm ci`.
+- Build Command: `npm run build`.
+- Output Directory: `public` o vacio si toma `vercel.json`.
+- Root Directory: raiz del repositorio.
+- Node.js Version: `20.x`.
+
+URLs utiles despues del deploy:
+
+```text
+https://TU-DOMINIO.vercel.app/
+https://TU-DOMINIO.vercel.app/health
+https://TU-DOMINIO.vercel.app/home
+https://TU-DOMINIO.vercel.app/openapi.json
+```
+
+---
+
+## 14. Secretos necesarios
+
+Para desplegar desde GitHub Actions hacia Vercel se necesitan estos secrets en GitHub:
+
+| Secret | Descripcion |
+| --- | --- |
+| `VERCEL_TOKEN` | Token personal de Vercel para permitir deploys desde CI. |
+| `VERCEL_ORG_ID` | ID del usuario/equipo de Vercel. |
+| `VERCEL_PROJECT_ID` | ID del proyecto en Vercel. |
+
+Donde cargarlos:
+
+```text
+GitHub -> Repo -> Settings -> Secrets and variables -> Actions
+```
+
+No se deben guardar tokens dentro del codigo.
+
+---
+
+## 15. Estrategia de ramas
+
+Estrategia simple recomendada:
+
+- `main`: rama estable y desplegable.
+- `feature/nombre`: nuevas funcionalidades.
+- `fix/nombre`: correcciones.
+- Pull Request hacia `main`.
+- El PR debe pasar lint, tests, build y Docker antes de merge.
+- El deploy a Vercel ocurre al integrar cambios en `main`.
+
+Esto evita desplegar codigo que no paso por controles automaticos.
+
+---
+
+## 16. Paso a paso para una demo
+
+Duracion sugerida: menos de 5 minutos.
+
+### 0:00 - 0:40 Mostrar arquitectura
+
+Mostrar el diagrama:
+
+```text
+Dev -> GitHub -> Actions -> Lint -> Tests -> Build -> Docker -> Vercel
+```
+
+Frase:
+
+> "Cada cambio que subo a GitHub activa controles automaticos. Si algo falla, no se despliega."
+
+### 0:40 - 1:20 Mostrar la app
+
+Archivos:
+
+```text
+src/app.js
+api/index.js
+```
+
+Explicar:
+
+> "La app es Express. Localmente corre con src/index.js y en Vercel se exporta como funcion serverless desde api/index.js."
+
+### 1:20 - 2:00 Mostrar tests
+
+Archivo:
+
+```text
+__tests__/app.test.js
+```
+
+Explicar:
+
+> "Los tests prueban endpoints reales con Supertest: raiz, health check y contrato OpenAPI."
+
+Ejecutar:
+
+```bash
+npm test
+```
+
+### 2:00 - 2:40 Mostrar build local
+
+Ejecutar:
+
+```bash
+npm run build
+```
+
+Explicar:
+
+> "El build local es una compuerta: primero analiza codigo con ESLint y despues corre los tests."
+
+### 2:40 - 3:30 Mostrar pipeline
+
+Archivo:
+
+```text
+.github/workflows/ci.yml
+```
+
+Explicar jobs:
+
+- quality;
+- docker;
+- deploy.
+
+Frase:
+
+> "Docker depende de quality y deploy depende de Docker. Asi se garantiza el orden."
+
+### 3:30 - 4:20 Mostrar Vercel
+
+Abrir la URL publica.
+
+Probar:
+
+```text
+/health
+/openapi.json
+```
+
+Frase:
+
+> "El despliegue final queda publicado en Vercel y se puede validar con el health check."
+
+### 4:20 - 5:00 Cierre
+
+Frase:
+
+> "El proyecto demuestra CI y CD: integra, analiza, prueba, construye, genera artefactos y despliega automaticamente."
+
+---
+
+## 17. Preguntas teoricas y respuestas
+
+### Que es CI?
+
+CI significa Integracion Continua. Es la practica de integrar cambios frecuentemente y validarlos automaticamente con herramientas como lint, tests y build.
+
+### Que es CD?
+
+CD puede significar Entrega Continua o Despliegue Continuo. En este proyecto significa que, despues de pasar los controles, el codigo se publica automaticamente en Vercel desde la rama `main`.
+
+### Por que usar GitHub Actions?
+
+Porque permite automatizar el flujo completo dentro del repositorio: instalacion, analisis, pruebas, build, Docker y deploy.
+
+### Por que usar Vercel?
+
+Porque permite desplegar rapidamente aplicaciones Node.js con funciones serverless, integra bien con GitHub y da una URL publica para demostrar el resultado.
+
+### Por que usar Docker si se despliega en Vercel?
+
+Porque Docker demuestra reproducibilidad y empaquetado. Aunque Vercel no use esa imagen para publicar, el pipeline valida que el proyecto tambien puede construirse y ejecutarse como contenedor.
+
+### Que pasa si falla un test?
+
+Falla el job de quality. Como Docker depende de quality y deploy depende de Docker, no se genera imagen ni se despliega.
+
+### Que pasa si faltan secretos de Vercel?
+
+El deploy se omite con una advertencia. El resto del pipeline sigue sirviendo para validar CI.
+
+### Que aporta OpenAPI?
+
+OpenAPI documenta el contrato de la API. En este proyecto tambien se expone desde `/openapi.json` y los tests verifican que este disponible.
+
+---
+
+## 18. Checklist de requisitos cumplidos
+
+- Entorno local reproducible con `npm ci`.
+- Comando de ejecucion con `npm start`.
+- Comando de analisis con `npm run lint`.
+- Tests automatizados con `npm test`.
+- Build local con `npm run build`.
+- `.env.example` presente.
+- `.gitignore` configurado.
+- GitHub Actions en push y pull request hacia `main`.
+- Pipeline con checkout, setup Node, install, lint, tests, build, Docker y artefactos.
+- Deploy continuo a Vercel.
+- Secretos documentados sin exponer credenciales.
+- Dockerfile y Docker Compose presentes.
+- OpenAPI como contrato de API.
+- README y guia completa actualizados.
+- Diagrama Mermaid incluido.
+- Guia de demo oral incluida.
+
+---
+
+## 19. Comandos finales de validacion
+
+Ejecutar localmente:
+
+```bash
+npm ci
+npm run lint
+npm test
+npm run build
+docker build -t ci-cd-demo:local .
+docker compose up --build
+```
+
+Probar:
+
+```text
+http://localhost:3000/health
+```
+
+Bajar Docker Compose:
+
+```bash
+docker compose down
+```
+
+Validar workflow YAML:
+
+```bash
+npx --yes yaml-lint .github/workflows/ci.yml
+```
+
+En Windows se puede usar `npm.cmd` y `npx.cmd` si PowerShell bloquea scripts:
+
+```bash
+npm.cmd ci
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
+npx.cmd --yes yaml-lint .github/workflows/ci.yml
+```
+
+---
+
+## 20. Resumen para entregar
+
+Este proyecto implementa un pipeline CI/CD completo sobre una API Express. El codigo se sube a GitHub, GitHub Actions instala dependencias, analiza el codigo con ESLint, ejecuta tests HTTP reales, valida el build, construye una imagen Docker, guarda artefactos y despliega en Vercel usando secretos seguros. La API expone un contrato OpenAPI y un endpoint de health check para validar la entrega.
