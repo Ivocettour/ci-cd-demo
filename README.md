@@ -44,8 +44,9 @@ Endpoints utiles:
 
 - `GET /`: estado general de la API.
 - `GET /health`: health check para CI/CD y Vercel.
-- `GET /home`: vista HTML simple de demostracion.
+- `GET /home`: panel HTML de demostracion del pipeline.
 - `GET /openapi.json`: contrato OpenAPI.
+- Rutas desconocidas: respuesta JSON `404` controlada.
 
 ## Tests, analisis y build
 
@@ -137,14 +138,14 @@ Si esos secretos no existen, el workflow deja una advertencia y omite el deploy.
 
 ## Spec Driven Development
 
-El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. El comando `npm run validate:openapi` verifica la estructura minima requerida del contrato. Los tests verifican que el endpoint exista y que la version devuelta por `/` coincida con el contrato.
+El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. El comando `npm run validate:openapi` verifica la estructura minima requerida del contrato, incluyendo `/home`. Los tests verifican que el endpoint exista y que la version devuelta por `/` coincida con el contrato.
 
 ## Demo oral en menos de 5 minutos
 
 1. Mostrar `README.md` y el diagrama Mermaid: "El flujo va del desarrollador al repositorio, CI, pruebas, build, artefacto, entrega y feedback".
 2. Mostrar `src/app.js`: "La API tiene endpoints de estado, health check, home y contrato OpenAPI".
-3. Mostrar `__tests__/app.test.js`: "Las pruebas validan comportamiento real con Supertest".
-4. Ejecutar `npm run build`: "Esta compuerta local corre analisis y tests".
+3. Mostrar `__tests__/app.test.js`: "Las pruebas validan API JSON, pagina HTML, contrato OpenAPI y errores 404 con Supertest".
+4. Ejecutar `npm run build`: "Esta compuerta local corre analisis, contrato OpenAPI y tests".
 5. Mostrar `.github/workflows/ci.yml`: "El mismo flujo corre en push y pull request; Docker genera el artefacto".
 6. Mostrar `vercel.json`: "Vercel publica la app Express mediante una funcion serverless y secretos de GitHub".
 

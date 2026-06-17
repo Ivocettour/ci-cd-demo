@@ -5,7 +5,7 @@ const path = require('node:path');
 const contractPath = path.join(__dirname, '..', 'docs', 'openapi.json');
 const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
 
-const requiredPaths = ['/', '/health', '/openapi.json'];
+const requiredPaths = ['/', '/health', '/home', '/openapi.json'];
 
 assert.equal(contract.openapi, '3.0.3', 'OpenAPI version must be 3.0.3');
 assert.ok(contract.info?.title, 'OpenAPI info.title is required');

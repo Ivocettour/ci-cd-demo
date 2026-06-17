@@ -55,6 +55,23 @@
           }
         }
       }
+    },
+    "/home": {
+      "get": {
+        "summary": "Pagina HTML de demostracion del pipeline",
+        "responses": {
+          "200": {
+            "description": "Pagina HTML de estado del pipeline",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

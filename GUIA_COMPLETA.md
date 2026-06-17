@@ -118,8 +118,9 @@ Endpoints disponibles:
 | --- | --- |
 | `GET /` | Devuelve estado general de la API. |
 | `GET /health` | Health check usado para verificar que el servicio esta vivo. |
-| `GET /home` | Pagina HTML simple de demostracion. |
+| `GET /home` | Panel HTML de demostracion del pipeline. |
 | `GET /openapi.json` | Contrato OpenAPI publicado por la propia API. |
+| Rutas desconocidas | Respuesta JSON `404` controlada. |
 
 Ejemplo de respuesta de `/health`:
 
@@ -301,6 +302,7 @@ Si una asercion falla, el comando `npm test` termina con error. En GitHub Action
 2. `GET /health` responde `200`, `status: healthy` y `uptime` numerico.
 3. `GET /home` responde `200` y devuelve la pagina HTML de demostracion con referencia a Vercel.
 4. `GET /openapi.json` expone el contrato OpenAPI y contiene rutas importantes.
+5. Una ruta desconocida responde `404` con JSON controlado.
 
 ### Detalle de cada prueba
 
@@ -313,6 +315,7 @@ Validar que la API principal este disponible y devuelva una respuesta JSON coher
 Verifica:
 
 - Codigo HTTP `200`.
+- Header `content-type` JSON.
 - Campo `status` igual a `ok`.
 - Campo `message` igual a `CI/CD Demo API`.
 - Campo `version` igual a la version declarada en `docs/openapi.json`.
@@ -330,6 +333,7 @@ Validar que el servicio tenga un endpoint simple para comprobar si esta vivo.
 Verifica:
 
 - Codigo HTTP `200`.
+- Header `content-type` JSON.
 - Campo `status` igual a `healthy`.
 - Campo `uptime` de tipo numerico.
 
@@ -346,7 +350,9 @@ Validar que la vista HTML usada en la demostracion publica siga disponible.
 Verifica:
 
 - Codigo HTTP `200`.
+- Header `content-type` HTML.
 - Presencia del texto `CI/CD Pipeline Demo`.
+- Presencia de `OpenAPI`.
 - Presencia de la palabra `Vercel`.
 
 Importancia:
@@ -365,10 +371,28 @@ Verifica:
 - Version OpenAPI `3.0.3`.
 - Existencia de la ruta `/` en el contrato.
 - Existencia de la ruta `/health` en el contrato.
+- Existencia de la ruta `/home` en el contrato.
 
 Importancia:
 
 Este test conecta la practica de Spec Driven Development con el pipeline. No solo se prueba que la API funcione, sino tambien que publique su contrato.
+
+#### 5. Test de error controlado `GET /missing-route`
+
+Objetivo:
+
+Validar que la API responda de forma predecible cuando una ruta no existe.
+
+Verifica:
+
+- Codigo HTTP `404`.
+- Header `content-type` JSON.
+- Campo `status` igual a `not_found`.
+- Mensaje que incluye la ruta solicitada.
+
+Importancia:
+
+Este test mejora la calidad del contrato HTTP. En vez de devolver una respuesta HTML generica de Express, la API devuelve un error JSON consistente y facil de consumir por clientes o monitores.
 
 ### Que cubren y que no cubren
 
@@ -379,6 +403,8 @@ Cubren:
 - Campos principales del JSON.
 - Relacion entre la API y el contrato OpenAPI.
 - Health check usado en CI/CD.
+- Pagina HTML de demo.
+- Errores 404 controlados.
 
 No cubren:
 
@@ -399,15 +425,15 @@ npm test
 Resultado esperado:
 
 ```text
-tests 4
-pass 4
+tests 5
+pass 5
 fail 0
 ```
 
 Como se interpretan los resultados:
 
-- `tests 4`: se ejecutaron cuatro casos de prueba.
-- `pass 4`: los cuatro pasaron correctamente.
+- `tests 5`: se ejecutaron cinco casos de prueba.
+- `pass 5`: los cinco pasaron correctamente.
 - `fail 0`: no hubo fallos.
 
 Estas pruebas corren en tres lugares:
@@ -491,6 +517,7 @@ Que valida:
 - existencia del objeto `paths`;
 - definicion de `GET /`;
 - definicion de `GET /health`;
+- definicion de `GET /home`;
 - definicion de `GET /openapi.json`;
 - existencia de los schemas `RootResponse` y `HealthResponse`.
 
@@ -739,7 +766,7 @@ __tests__/app.test.js
 
 Explicar:
 
-> "Los tests prueban endpoints reales con Supertest: raiz, health check y contrato OpenAPI."
+> "Los tests prueban endpoints reales con Supertest: raiz, health check, pagina HTML, contrato OpenAPI y errores 404."
 
 Ejecutar:
 
