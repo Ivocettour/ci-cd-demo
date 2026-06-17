@@ -215,15 +215,17 @@ Los scripts estan definidos en `package.json`.
 | --- | --- | --- |
 | `start` | `node src/index.js` | Levanta la API local. |
 | `dev` | `node src/index.js` | Alias simple para desarrollo. |
+| `validate:syntax` | `node scripts/validate-syntax.js` | Valida sintaxis JavaScript y JSON sin ejecutar la app. |
 | `lint` | `eslint .` | Ejecuta analisis estatico. |
 | `validate:openapi` | `node scripts/validate-openapi.js` | Valida la estructura minima del contrato OpenAPI. |
 | `test` | `node --test __tests__/app.test.js` | Ejecuta tests automatizados. |
-| `build` | `npm run lint && npm run validate:openapi && npm test` | Valida lint, contrato y tests como compuerta local. |
+| `build` | `npm run validate:syntax && npm run lint && npm run validate:openapi && npm test` | Valida sintaxis, lint, contrato y tests como compuerta local. |
 
 Comandos recomendados antes de subir cambios:
 
 ```bash
 npm run lint
+npm run validate:syntax
 npm run validate:openapi
 npm test
 npm run build
@@ -233,6 +235,7 @@ En Windows:
 
 ```bash
 npm.cmd run lint
+npm.cmd run validate:syntax
 npm.cmd run validate:openapi
 npm.cmd test
 npm.cmd run build
@@ -456,6 +459,23 @@ eslint.config.js
 
 ESLint revisa errores comunes como variables no definidas o variables sin usar.
 
+Antes de ESLint tambien existe una validacion de sintaxis:
+
+```bash
+npm run validate:syntax
+```
+
+Ese comando revisa:
+
+- archivos JavaScript con `node --check`;
+- archivos JSON con `JSON.parse`;
+- `package.json`;
+- `vercel.json`;
+- `docs/openapi.json`;
+- archivos principales de `src`, `api`, `scripts` y `__tests__`.
+
+Esta validacion detecta errores de sintaxis antes de ejecutar lint, tests, Docker o deploy.
+
 Ejecutar:
 
 ```bash
@@ -598,11 +618,12 @@ Pasos:
 1. Checkout del repositorio.
 2. Setup de Node.js 20.
 3. Instalacion con `npm ci`.
-4. Analisis estatico con `npm run lint`.
-5. Validacion del contrato con `npm run validate:openapi`.
-6. Tests con `npm test`.
-7. Build local con `npm run build`.
-8. Upload del contrato OpenAPI como artefacto.
+4. Validacion de sintaxis con `npm run validate:syntax`.
+5. Analisis estatico con `npm run lint`.
+6. Validacion del contrato con `npm run validate:openapi`.
+7. Tests con `npm test`.
+8. Build local con `npm run build`.
+9. Upload del contrato OpenAPI como artefacto.
 
 ### 12.2 Docker image
 
@@ -635,6 +656,14 @@ Pasos:
 6. `vercel deploy --prebuilt --prod`.
 
 Si faltan secretos, el job no rompe el pipeline: muestra una advertencia y omite el deploy.
+
+El deploy tiene una condicion explicita:
+
+```text
+success() && push a main
+```
+
+Esto significa que si falla `npm test`, o cualquier paso anterior como sintaxis, lint, validacion OpenAPI, build o Docker, el job de despliegue no se ejecuta.
 
 ---
 
@@ -891,6 +920,7 @@ Ejecutar localmente:
 ```bash
 npm ci
 npm run lint
+npm run validate:syntax
 npm run validate:openapi
 npm test
 npm run build
@@ -921,6 +951,7 @@ En Windows se puede usar `npm.cmd` y `npx.cmd` si PowerShell bloquea scripts:
 ```bash
 npm.cmd ci
 npm.cmd run lint
+npm.cmd run validate:syntax
 npm.cmd run validate:openapi
 npm.cmd test
 npm.cmd run build

@@ -52,12 +52,13 @@ Endpoints utiles:
 
 ```bash
 npm run lint
+npm run validate:syntax
 npm run validate:openapi
 npm test
 npm run build
 ```
 
-En este stack el build local funciona como compuerta verificable: ejecuta ESLint, valida el contrato OpenAPI y corre las pruebas automatizadas. La imagen Docker se construye en CI y tambien puede construirse localmente.
+En este stack el build local funciona como compuerta verificable: valida sintaxis JS/JSON, ejecuta ESLint, valida el contrato OpenAPI y corre las pruebas automatizadas. La imagen Docker se construye en CI y tambien puede construirse localmente.
 
 ## Docker
 
@@ -90,13 +91,14 @@ Etapas:
 1. Checkout del repositorio.
 2. Setup de Node.js 20 con cache npm.
 3. Instalacion con `npm ci`.
-4. Analisis estatico con ESLint.
-5. Validacion del contrato OpenAPI.
-6. Tests con `node:test` y Supertest.
-7. Build local con `npm run build`.
-8. Build y smoke test de imagen Docker.
-9. Publicacion del contrato OpenAPI y export de imagen Docker como artefactos.
-10. Deploy a Vercel en push a `main`.
+4. Validacion de sintaxis JavaScript y JSON.
+5. Analisis estatico con ESLint.
+6. Validacion del contrato OpenAPI.
+7. Tests con `node:test` y Supertest.
+8. Build local con `npm run build`.
+9. Build y smoke test de imagen Docker.
+10. Publicacion del contrato OpenAPI y export de imagen Docker como artefactos.
+11. Deploy a Vercel en push a `main`.
 
 ```mermaid
 flowchart LR
@@ -117,6 +119,7 @@ La entrega continua queda configurada para Vercel:
 - `vercel.json` define la instalacion, build, salida `public` y rewrite hacia la funcion serverless.
 - `api/index.js` adapta la misma app Express para Vercel.
 - GitHub Actions despliega con Vercel CLI solo en push a `main`.
+- El deploy solo corre si pasaron lint, validacion OpenAPI, tests, build y Docker.
 
 Secreto necesario en GitHub:
 
@@ -154,6 +157,7 @@ El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. E
 ```bash
 npm ci
 npm run lint
+npm run validate:syntax
 npm run validate:openapi
 npm test
 npm run build

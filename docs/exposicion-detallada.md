@@ -16,14 +16,15 @@ CI/CD significa:
 En este proyecto, cada cambio que se sube a GitHub puede pasar automaticamente por controles de calidad:
 
 1. Instalacion limpia de dependencias.
-2. Analisis estatico del codigo.
-3. Validacion del contrato OpenAPI.
-4. Ejecucion de tests automatizados.
-5. Build local.
-6. Construccion de imagen Docker.
-7. Smoke test del contenedor.
-8. Generacion de artefactos.
-9. Despliegue en Vercel.
+2. Validacion de sintaxis JavaScript y JSON.
+3. Analisis estatico del codigo.
+4. Validacion del contrato OpenAPI.
+5. Ejecucion de tests automatizados.
+6. Build local.
+7. Construccion de imagen Docker.
+8. Smoke test del contenedor.
+9. Generacion de artefactos.
+10. Despliegue en Vercel.
 
 La idea principal es evitar que un cambio roto llegue a produccion. Si falla el lint, el contrato, los tests o Docker, el pipeline se detiene.
 
@@ -155,11 +156,12 @@ Ese job:
 1. Descarga el codigo.
 2. Configura Node.js 20.
 3. Instala dependencias con `npm ci`.
-4. Ejecuta ESLint.
-5. Valida OpenAPI.
-6. Ejecuta tests.
-7. Ejecuta build local.
-8. Publica el contrato OpenAPI como artefacto.
+4. Valida sintaxis JavaScript y JSON.
+5. Ejecuta ESLint.
+6. Valida OpenAPI.
+7. Ejecuta tests.
+8. Ejecuta build local.
+9. Publica el contrato OpenAPI como artefacto.
 
 La idea es que cada push o pull request sea validado automaticamente.
 
@@ -187,9 +189,53 @@ Frase para exposicion:
 
 > "El despliegue no se hace manualmente desde mi computadora. Lo hace el pipeline despues de validar el codigo."
 
+Condicion importante:
+
+```text
+success() && push a main
+```
+
+Esto significa que Vercel solo recibe un deploy si todos los controles anteriores pasaron correctamente. Si falla un test, falla el job `quality`; si falla `quality`, no corre Docker; y si Docker no corre correctamente, tampoco se ejecuta el deploy.
+
+Frase para exposicion:
+
+> "Un test fallido corta la cadena completa: no hay imagen Docker valida y no hay despliegue a produccion."
+
 ---
 
-## 8. Explicacion profunda de los tests
+## 8. Validacion de sintaxis
+
+Ademas de tests funcionales, el proyecto tiene una validacion explicita de sintaxis:
+
+```bash
+npm run validate:syntax
+```
+
+Esta validacion usa dos mecanismos:
+
+1. `node --check` para archivos JavaScript.
+2. `JSON.parse` para archivos JSON.
+
+Que revisa:
+
+- `src/app.js`;
+- `src/index.js`;
+- `api/index.js`;
+- scripts de validacion;
+- tests;
+- `package.json`;
+- `vercel.json`;
+- `docs/openapi.json`.
+
+No ejecuta la aplicacion ni hace requests HTTP. Su objetivo es detectar errores de escritura, llaves mal cerradas, JSON invalido o JavaScript que Node no pueda interpretar.
+
+Frase para exposicion:
+
+> "Antes de analizar estilo o correr pruebas, el pipeline verifica que los archivos principales sean sintacticamente validos."
+
+---
+
+## 9. Explicacion profunda de los tests
 
 Esta es una parte muy importante para defender el proyecto.
 
@@ -213,7 +259,7 @@ npm.cmd test
 
 ---
 
-## 9. Que tipo de tests son
+## 10. Que tipo de tests son
 
 Los tests del proyecto son principalmente tests automatizados de API.
 
@@ -486,7 +532,7 @@ Sin embargo, si prueban el comportamiento externo de la API, que es lo mas impor
 
 ---
 
-## 10. Como funcionan tecnicamente los tests
+## 11. Como funcionan tecnicamente los tests
 
 Los tests usan tres herramientas:
 
@@ -558,7 +604,7 @@ Esto evita problemas como:
 
 ---
 
-## 11. Tests actuales uno por uno
+## 12. Tests actuales uno por uno
 
 Actualmente hay 5 tests.
 
@@ -662,7 +708,7 @@ Esto mejora la calidad de la API. En vez de devolver una respuesta generica o HT
 
 ---
 
-## 12. Que cubren los tests
+## 13. Que cubren los tests
 
 Los tests cubren:
 
@@ -678,7 +724,7 @@ Los tests cubren:
 
 ---
 
-## 13. Que no cubren los tests
+## 14. Que no cubren los tests
 
 Los tests no cubren:
 
@@ -697,7 +743,7 @@ Frase para exposicion:
 
 ---
 
-## 14. Resultado esperado de tests
+## 15. Resultado esperado de tests
 
 Al ejecutar:
 
@@ -721,9 +767,23 @@ Interpretacion:
 
 Si un test falla, `npm test` devuelve codigo de error. En CI eso detiene el pipeline.
 
+En este proyecto esa falla tambien evita el despliegue. El flujo esta encadenado asi:
+
+```text
+quality -> docker -> deploy
+```
+
+Por eso:
+
+1. Si falla `npm test`, falla `quality`.
+2. Si falla `quality`, no corre el job `docker`.
+3. Si no corre o falla `docker`, no corre `deploy`.
+
+Ademas, el job de deploy tiene `success()` como condicion explicita. Eso refuerza que solo se despliega cuando todo lo anterior termino correctamente.
+
 ---
 
-## 15. Validacion OpenAPI
+## 16. Validacion OpenAPI
 
 Ademas de tests, el proyecto tiene un validador del contrato.
 
@@ -756,7 +816,7 @@ Esto suma una practica de Spec Driven Development, porque el contrato no queda c
 
 ---
 
-## 16. Build local
+## 17. Build local
 
 El build local esta definido asi:
 
@@ -776,7 +836,7 @@ Si cualquiera falla, el build falla.
 
 ---
 
-## 17. Docker
+## 18. Docker
 
 Docker se usa para demostrar que la app puede empaquetarse y ejecutarse de forma reproducible.
 
@@ -803,7 +863,7 @@ Esto demuestra que el contenedor no solo se construye, sino que responde.
 
 ---
 
-## 18. GitHub Actions
+## 19. GitHub Actions
 
 El workflow esta en:
 
@@ -847,7 +907,7 @@ Despliega a Vercel si:
 
 ---
 
-## 19. Vercel
+## 20. Vercel
 
 Vercel despliega el proyecto como una funcion serverless.
 
@@ -879,7 +939,7 @@ Incluye:
 
 ---
 
-## 20. Secretos de Vercel
+## 21. Secretos de Vercel
 
 Para deploy desde GitHub Actions se necesitan:
 
@@ -893,7 +953,7 @@ No se guardan credenciales en el repositorio.
 
 ---
 
-## 21. Guion breve para exposicion
+## 22. Guion breve para exposicion
 
 ### Inicio
 
@@ -964,7 +1024,7 @@ Probar:
 
 ---
 
-## 22. Preguntas que pueden hacer
+## 23. Preguntas que pueden hacer
 
 ### Que tipo de tests son?
 
@@ -988,7 +1048,7 @@ Porque una API tambien debe responder bien ante errores. El 404 JSON controlado 
 
 ### Que pasa si falla un test?
 
-Falla `npm test`, falla el job de GitHub Actions y no se ejecuta el deploy.
+Falla `npm test`, falla el job `quality`, no se ejecuta Docker y no se ejecuta el deploy a Vercel. El codigo roto no llega a produccion.
 
 ### Por que Docker si Vercel no usa esa imagen?
 
@@ -1000,7 +1060,7 @@ Sirve como contrato de la API. Documenta rutas y respuestas esperadas. En este p
 
 ---
 
-## 23. Comandos para practicar antes de exponer
+## 24. Comandos para practicar antes de exponer
 
 ```bash
 npm ci
@@ -1038,6 +1098,6 @@ npm.cmd run build
 
 ---
 
-## 24. Cierre recomendado
+## 25. Cierre recomendado
 
 > "El valor del proyecto no esta en que la API sea grande, sino en que el proceso es profesional: cada cambio se valida automaticamente, se prueba, se empaqueta, genera artefactos y se despliega en Vercel. Eso es justamente lo que busca CI/CD: reducir errores manuales y aumentar confianza en cada entrega."
