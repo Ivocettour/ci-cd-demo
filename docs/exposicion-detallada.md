@@ -184,6 +184,7 @@ El job `deploy`:
 3. Usa Vercel CLI.
 4. Usa secrets de GitHub.
 5. Ejecuta `vercel pull`, `vercel build --prod` y `vercel deploy --prebuilt --prod`.
+6. Si el deploy fue exitoso y la API key de CallMeBot esta configurada, envia un WhatsApp con el mensaje `todo funciona`.
 
 Frase para exposicion:
 
@@ -200,6 +201,8 @@ Esto significa que Vercel solo recibe un deploy si todos los controles anteriore
 Frase para exposicion:
 
 > "Un test fallido corta la cadena completa: no hay imagen Docker valida y no hay despliegue a produccion."
+
+Tambien se agrego feedback por WhatsApp usando CallMeBot. Este feedback no reemplaza a los logs de GitHub Actions ni al estado de Vercel, pero sirve como aviso rapido cuando la entrega termino correctamente.
 
 ---
 
@@ -905,6 +908,8 @@ Despliega a Vercel si:
 - la rama es `main`;
 - existen los secrets de Vercel.
 
+Despues del deploy, puede enviar una notificacion por WhatsApp usando CallMeBot. Para evitar falsos positivos, el mensaje se manda solo si el paso de Vercel termino correctamente.
+
 ---
 
 ## 20. Vercel
@@ -948,6 +953,8 @@ Para deploy desde GitHub Actions se necesitan:
 | `VERCEL_TOKEN` | Autoriza deploy desde CI. |
 | `VERCEL_ORG_ID` | Identifica la cuenta o equipo. |
 | `VERCEL_PROJECT_ID` | Identifica el proyecto. |
+| `CALLMEBOT_APIKEY` | API key de CallMeBot para enviar WhatsApp. |
+| `WHATSAPP_TO` | Numero que recibe el mensaje `todo funciona`. Si no se configura, usa `+5493482299620`. |
 
 No se guardan credenciales en el repositorio.
 

@@ -96,13 +96,32 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Deploy to Vercel
+        id: vercel-deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "::warning::Vercel secrets are not configured; deploy was skipped."
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Notify WhatsApp success
+        if: steps.vercel-deploy.outputs.deployed == 'true'
+        env:
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          WHATSAPP_TO: ${{ secrets.WHATSAPP_TO || '+5493482299620' }}
+        run: |
+          if [ -z "$CALLMEBOT_APIKEY" ] || [ -z "$WHATSAPP_TO" ]; then
+            echo "::warning::WhatsApp secrets are not configured; notification was skipped."
+            exit 0
+          fi
+
+          curl --fail --get "https://api.callmebot.com/whatsapp.php" \
+            --data-urlencode "phone=$WHATSAPP_TO" \
+            --data-urlencode "text=todo funciona" \
+            --data-urlencode "apikey=$CALLMEBOT_APIKEY"

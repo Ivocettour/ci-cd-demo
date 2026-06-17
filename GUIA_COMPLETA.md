@@ -665,6 +665,14 @@ success() && push a main
 
 Esto significa que si falla `npm test`, o cualquier paso anterior como sintaxis, lint, validacion OpenAPI, build o Docker, el job de despliegue no se ejecuta.
 
+Despues de un deploy exitoso, el workflow puede enviar una notificacion por WhatsApp usando CallMeBot. Ese paso solo corre si Vercel realmente desplego y marco `deployed=true`. El mensaje configurado es:
+
+```text
+todo funciona
+```
+
+Si falta `CALLMEBOT_APIKEY`, la notificacion se omite con una advertencia, pero el deploy no se rompe.
+
 ---
 
 ## 13. Vercel
@@ -730,6 +738,8 @@ Para desplegar desde GitHub Actions hacia Vercel se necesitan estos secrets en G
 | `VERCEL_TOKEN` | Token personal de Vercel para permitir deploys desde CI. |
 | `VERCEL_ORG_ID` | ID del usuario/equipo de Vercel. |
 | `VERCEL_PROJECT_ID` | ID del proyecto en Vercel. |
+| `CALLMEBOT_APIKEY` | API key de CallMeBot para enviar WhatsApp. |
+| `WHATSAPP_TO` | Numero destino con codigo de pais. Si no se configura, usa `+5493482299620`. |
 
 Donde cargarlos:
 

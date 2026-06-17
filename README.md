@@ -120,6 +120,7 @@ La entrega continua queda configurada para Vercel:
 - `api/index.js` adapta la misma app Express para Vercel.
 - GitHub Actions despliega con Vercel CLI solo en push a `main`.
 - El deploy solo corre si pasaron lint, validacion OpenAPI, tests, build y Docker.
+- Si el deploy termina correctamente y esta configurada la API key de CallMeBot, GitHub Actions envia un WhatsApp con el mensaje `todo funciona`.
 
 Secreto necesario en GitHub:
 
@@ -128,8 +129,10 @@ Secreto necesario en GitHub:
 | `VERCEL_TOKEN` | Token de Vercel para desplegar desde GitHub Actions. |
 | `VERCEL_ORG_ID` | ID del equipo o usuario de Vercel. |
 | `VERCEL_PROJECT_ID` | ID del proyecto de Vercel. |
+| `CALLMEBOT_APIKEY` | API key de CallMeBot para enviar WhatsApp. |
+| `WHATSAPP_TO` | Numero destino con codigo de pais. Si no se configura, usa `+5493482299620`. |
 
-Si esos secretos no existen, el workflow deja una advertencia y omite el deploy. No se incluyen credenciales en el repositorio.
+Si los secretos de Vercel no existen, el workflow deja una advertencia y omite el deploy. Si `CALLMEBOT_APIKEY` no existe, el deploy sigue funcionando y solo se omite la notificacion. No se incluyen credenciales en el repositorio.
 
 ## Estrategia de ramas
 
