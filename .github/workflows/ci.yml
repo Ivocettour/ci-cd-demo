@@ -30,6 +30,9 @@ jobs:
       - name: Run static analysis
         run: npm run lint
 
+      - name: Validate OpenAPI contract
+        run: npm run validate:openapi
+
       - name: Run tests
         run: npm test
 

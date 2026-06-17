@@ -215,13 +215,15 @@ Los scripts estan definidos en `package.json`.
 | `start` | `node src/index.js` | Levanta la API local. |
 | `dev` | `node src/index.js` | Alias simple para desarrollo. |
 | `lint` | `eslint .` | Ejecuta analisis estatico. |
+| `validate:openapi` | `node scripts/validate-openapi.js` | Valida la estructura minima del contrato OpenAPI. |
 | `test` | `node --test __tests__/app.test.js` | Ejecuta tests automatizados. |
-| `build` | `npm run lint && npm test` | Valida lint y tests como compuerta local. |
+| `build` | `npm run lint && npm run validate:openapi && npm test` | Valida lint, contrato y tests como compuerta local. |
 
 Comandos recomendados antes de subir cambios:
 
 ```bash
 npm run lint
+npm run validate:openapi
 npm test
 npm run build
 ```
@@ -230,6 +232,7 @@ En Windows:
 
 ```bash
 npm.cmd run lint
+npm.cmd run validate:openapi
 npm.cmd test
 npm.cmd run build
 ```
@@ -296,7 +299,8 @@ Si una asercion falla, el comando `npm test` termina con error. En GitHub Action
 
 1. `GET /` responde `200`, `status: ok`, mensaje y version.
 2. `GET /health` responde `200`, `status: healthy` y `uptime` numerico.
-3. `GET /openapi.json` expone el contrato OpenAPI y contiene rutas importantes.
+3. `GET /home` responde `200` y devuelve la pagina HTML de demostracion con referencia a Vercel.
+4. `GET /openapi.json` expone el contrato OpenAPI y contiene rutas importantes.
 
 ### Detalle de cada prueba
 
@@ -333,7 +337,23 @@ Importancia:
 
 Este endpoint sirve para monitoreo, smoke tests y validacion de despliegue. Tambien se usa en Docker para comprobar que el contenedor responde correctamente.
 
-#### 3. Test del contrato `GET /openapi.json`
+#### 3. Test de la pagina de demo `GET /home`
+
+Objetivo:
+
+Validar que la vista HTML usada en la demostracion publica siga disponible.
+
+Verifica:
+
+- Codigo HTTP `200`.
+- Presencia del texto `CI/CD Pipeline Demo`.
+- Presencia de la palabra `Vercel`.
+
+Importancia:
+
+Este test agrega cobertura sobre la parte visible de la demo. No es una prueba visual de navegador, pero confirma que el endpoint HTML existe y muestra contenido coherente con el despliegue actual.
+
+#### 4. Test del contrato `GET /openapi.json`
 
 Objetivo:
 
@@ -379,15 +399,15 @@ npm test
 Resultado esperado:
 
 ```text
-tests 3
-pass 3
+tests 4
+pass 4
 fail 0
 ```
 
 Como se interpretan los resultados:
 
-- `tests 3`: se ejecutaron tres casos de prueba.
-- `pass 3`: los tres pasaron correctamente.
+- `tests 4`: se ejecutaron cuatro casos de prueba.
+- `pass 4`: los cuatro pasaron correctamente.
 - `fail 0`: no hubo fallos.
 
 Estas pruebas corren en tres lugares:
@@ -451,6 +471,31 @@ Esto vincula:
 
 Por eso, si cambia la version del contrato, la API y los tests ayudan a detectar inconsistencias.
 
+Ademas, el proyecto incluye un validador propio:
+
+```text
+scripts/validate-openapi.js
+```
+
+Se ejecuta con:
+
+```bash
+npm run validate:openapi
+```
+
+Que valida:
+
+- version OpenAPI `3.0.3`;
+- presencia de `info.title`;
+- presencia de `info.version`;
+- existencia del objeto `paths`;
+- definicion de `GET /`;
+- definicion de `GET /health`;
+- definicion de `GET /openapi.json`;
+- existencia de los schemas `RootResponse` y `HealthResponse`.
+
+Esto hace que el pipeline no dependa solamente de que el archivo JSON exista. Tambien verifica que tenga la estructura minima que la API y la documentacion necesitan.
+
 ---
 
 ## 11. Docker
@@ -492,6 +537,8 @@ Con Docker Compose:
 docker compose up --build
 ```
 
+El servicio de Compose incluye un `healthcheck` que consulta `/health`. Eso permite que Docker marque el contenedor como saludable si la API responde correctamente.
+
 Bajar el entorno:
 
 ```bash
@@ -525,9 +572,10 @@ Pasos:
 2. Setup de Node.js 20.
 3. Instalacion con `npm ci`.
 4. Analisis estatico con `npm run lint`.
-5. Tests con `npm test`.
-6. Build local con `npm run build`.
-7. Upload del contrato OpenAPI como artefacto.
+5. Validacion del contrato con `npm run validate:openapi`.
+6. Tests con `npm test`.
+7. Build local con `npm run build`.
+8. Upload del contrato OpenAPI como artefacto.
 
 ### 12.2 Docker image
 
@@ -709,7 +757,7 @@ npm run build
 
 Explicar:
 
-> "El build local es una compuerta: primero analiza codigo con ESLint y despues corre los tests."
+> "El build local es una compuerta: analiza codigo con ESLint, valida el contrato OpenAPI y despues corre los tests."
 
 ### 2:40 - 3:30 Mostrar pipeline
 
@@ -816,6 +864,7 @@ Ejecutar localmente:
 ```bash
 npm ci
 npm run lint
+npm run validate:openapi
 npm test
 npm run build
 docker build -t ci-cd-demo:local .
@@ -845,6 +894,7 @@ En Windows se puede usar `npm.cmd` y `npx.cmd` si PowerShell bloquea scripts:
 ```bash
 npm.cmd ci
 npm.cmd run lint
+npm.cmd run validate:openapi
 npm.cmd test
 npm.cmd run build
 npx.cmd --yes yaml-lint .github/workflows/ci.yml

@@ -1,5 +1,7 @@
 # CI/CD Demo
 
+[![CI/CD](https://github.com/ivocettour/ci-cd-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/ivocettour/ci-cd-demo/actions/workflows/ci.yml)
+
 API Node.js + Express preparada para demostrar Integracion Continua y Entrega Continua sin rehacer el proyecto original.
 
 ## Tecnologias
@@ -49,11 +51,12 @@ Endpoints utiles:
 
 ```bash
 npm run lint
+npm run validate:openapi
 npm test
 npm run build
 ```
 
-En este stack el build local funciona como compuerta verificable: ejecuta ESLint y las pruebas automatizadas. La imagen Docker se construye en CI y tambien puede construirse localmente.
+En este stack el build local funciona como compuerta verificable: ejecuta ESLint, valida el contrato OpenAPI y corre las pruebas automatizadas. La imagen Docker se construye en CI y tambien puede construirse localmente.
 
 ## Docker
 
@@ -72,6 +75,8 @@ docker compose up --build
 
 Luego abrir `http://localhost:3000/health`.
 
+Docker Compose incluye un `healthcheck` que consulta `/health` para marcar el contenedor como saludable.
+
 ## Pipeline CI/CD
 
 El workflow esta en `.github/workflows/ci.yml` y corre en:
@@ -85,11 +90,12 @@ Etapas:
 2. Setup de Node.js 20 con cache npm.
 3. Instalacion con `npm ci`.
 4. Analisis estatico con ESLint.
-5. Tests con `node:test` y Supertest.
-6. Build local con `npm run build`.
-7. Build y smoke test de imagen Docker.
-8. Publicacion del contrato OpenAPI y export de imagen Docker como artefactos.
-9. Deploy a Vercel en push a `main`.
+5. Validacion del contrato OpenAPI.
+6. Tests con `node:test` y Supertest.
+7. Build local con `npm run build`.
+8. Build y smoke test de imagen Docker.
+9. Publicacion del contrato OpenAPI y export de imagen Docker como artefactos.
+10. Deploy a Vercel en push a `main`.
 
 ```mermaid
 flowchart LR
@@ -131,7 +137,7 @@ Si esos secretos no existen, el workflow deja una advertencia y omite el deploy.
 
 ## Spec Driven Development
 
-El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. Los tests verifican que el endpoint exista y que la version devuelta por `/` coincida con el contrato.
+El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. El comando `npm run validate:openapi` verifica la estructura minima requerida del contrato. Los tests verifican que el endpoint exista y que la version devuelta por `/` coincida con el contrato.
 
 ## Demo oral en menos de 5 minutos
 
@@ -147,6 +153,7 @@ El contrato vive en `docs/openapi.json` y la app lo expone en `/openapi.json`. L
 ```bash
 npm ci
 npm run lint
+npm run validate:openapi
 npm test
 npm run build
 docker build -t ci-cd-demo .

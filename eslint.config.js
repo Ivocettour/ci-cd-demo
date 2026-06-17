@@ -1,4 +1,5 @@
 const globals = {
+  __dirname: 'readonly',
   console: 'readonly',
   describe: 'readonly',
   expect: 'readonly',

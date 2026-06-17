@@ -20,6 +20,13 @@ describe('API Tests', () => {
     assert.equal(typeof res.body.uptime, 'number');
   });
 
+  test('GET /home returns the demo HTML page', async () => {
+    const res = await request(app).get('/home');
+    assert.equal(res.statusCode, 200);
+    assert.match(res.text, /CI\/CD Pipeline Demo/);
+    assert.match(res.text, /Vercel/);
+  });
+
   test('GET /openapi.json exposes the API contract used by the app', async () => {
     const res = await request(app).get('/openapi.json');
     assert.equal(res.statusCode, 200);
