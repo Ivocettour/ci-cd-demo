@@ -2,7 +2,7 @@
 
 [![CI/CD](https://github.com/ivocettour/ci-cd-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/ivocettour/ci-cd-demo/actions/workflows/ci.yml)
 
-API Node.js + Express preparada para demostrar Integracion Continua y Entrega Continua sin rehacer el proyecto original.
+API Node.js + Express preparada para demostrar Integracion Continua y Entrega Continua 
 
 ## Tecnologias
 
