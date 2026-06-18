@@ -236,6 +236,231 @@ Frase para exposicion:
 
 > "Antes de analizar estilo o correr pruebas, el pipeline verifica que los archivos principales sean sintacticamente validos."
 
+### Es un test de sintaxis?
+
+En sentido estricto, `validate:syntax` no es un test funcional como los de `__tests__/app.test.js`, porque no usa `node:test`, no hace peticiones HTTP y no valida comportamiento de la API.
+
+Es una validacion automatizada de sintaxis. Dentro de un pipeline CI/CD cumple un rol parecido al de una prueba temprana: si el codigo no puede ser interpretado por Node o si un JSON esta mal escrito, el proceso falla inmediatamente.
+
+Se puede explicar asi:
+
+> "No prueba comportamiento, prueba que el codigo y la configuracion esten bien escritos a nivel sintactico."
+
+### Por que es util en CI/CD
+
+Esta validacion sirve para detectar errores muy basicos antes de gastar tiempo en pasos mas pesados.
+
+Ejemplos de errores que detecta:
+
+- una llave `}` faltante en JavaScript;
+- un parentesis mal cerrado;
+- un `package.json` con coma de mas;
+- un `vercel.json` invalido;
+- un `openapi.json` que no se puede parsear;
+- un archivo de test con sintaxis rota.
+
+Si alguno de esos errores existe, no tiene sentido seguir con lint, OpenAPI, tests, Docker o deploy. Por eso esta validacion corre al principio del build.
+
+### Codigo del validador de sintaxis explicado
+
+Archivo:
+
+```text
+scripts/validate-syntax.js
+```
+
+Codigo:
+
+```js
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+```
+
+Explicacion:
+
+- `spawnSync`: permite ejecutar comandos del sistema desde Node. En este caso se usa para correr `node --check`.
+- `fs`: permite leer archivos del disco. Se usa para abrir archivos JSON.
+- `path`: permite construir rutas compatibles con Windows, Linux y macOS.
+
+```js
+const root = path.join(__dirname, '..');
+```
+
+Explicacion:
+
+- `__dirname` apunta a la carpeta donde esta el script, o sea `scripts`.
+- `..` sube un nivel hasta la raiz del proyecto.
+- `root` queda apuntando al directorio principal del repo.
+
+Esto evita depender de rutas hardcodeadas y hace que el script funcione igual en local y en GitHub Actions.
+
+```js
+const jsFiles = [
+  'api/index.js',
+  'eslint.config.js',
+  'scripts/validate-openapi.js',
+  'scripts/validate-syntax.js',
+  'src/app.js',
+  'src/index.js',
+  '__tests__/app.test.js'
+];
+```
+
+Explicacion:
+
+Esta lista contiene los archivos JavaScript principales del proyecto:
+
+- adaptador de Vercel;
+- configuracion de ESLint;
+- scripts de validacion;
+- aplicacion Express;
+- entrada local;
+- tests automatizados.
+
+Cada archivo de esta lista se revisa con `node --check`.
+
+```js
+const jsonFiles = [
+  'docs/openapi.json',
+  'package.json',
+  'vercel.json'
+];
+```
+
+Explicacion:
+
+Esta lista contiene archivos JSON importantes:
+
+- `docs/openapi.json`: contrato de la API;
+- `package.json`: scripts, dependencias y metadata del proyecto;
+- `vercel.json`: configuracion de deploy.
+
+Si uno de estos JSON tiene sintaxis invalida, el pipeline debe fallar.
+
+```js
+for (const file of jsFiles) {
+  const result = spawnSync(process.execPath, ['--check', path.join(root, file)], {
+    encoding: 'utf8'
+  });
+```
+
+Explicacion:
+
+- Recorre cada archivo JavaScript.
+- `process.execPath` es la ruta del ejecutable de Node que esta corriendo el script.
+- `--check` le dice a Node: "analiza la sintaxis, pero no ejecutes el archivo".
+- `path.join(root, file)` arma la ruta completa del archivo.
+- `encoding: 'utf8'` permite leer la salida como texto.
+
+Ejemplo equivalente:
+
+```bash
+node --check src/app.js
+```
+
+Ese comando no levanta el servidor. Solo confirma que Node puede interpretar el archivo.
+
+```js
+  if (result.status !== 0) {
+    process.stderr.write(result.stderr);
+    throw new Error(`JavaScript syntax check failed: ${file}`);
+  }
+}
+```
+
+Explicacion:
+
+- `result.status` es el codigo de salida del comando.
+- `0` significa exito.
+- Cualquier valor distinto de `0` significa error.
+- Si hay error, se imprime el mensaje en consola y se lanza una excepcion.
+
+Esa excepcion hace que el comando falle. En GitHub Actions, un comando fallido corta el job.
+
+```js
+for (const file of jsonFiles) {
+  const fullPath = path.join(root, file);
+  JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+}
+```
+
+Explicacion:
+
+- Recorre cada archivo JSON.
+- Lee el contenido con `fs.readFileSync`.
+- Intenta convertirlo en objeto con `JSON.parse`.
+
+Si el JSON esta mal escrito, `JSON.parse` lanza un error y el pipeline falla.
+
+Ejemplo de JSON invalido:
+
+```json
+{
+  "name": "ci-cd-demo",
+}
+```
+
+Esa coma final haria fallar la validacion.
+
+```js
+console.log('JavaScript and JSON syntax are valid.');
+```
+
+Explicacion:
+
+Si el script llega a esta linea, significa que todos los JS pasaron `node --check` y todos los JSON pasaron `JSON.parse`.
+
+Mensaje esperado:
+
+```text
+JavaScript and JSON syntax are valid.
+```
+
+### Donde se ejecuta la validacion de sintaxis
+
+Se ejecuta en tres lugares:
+
+1. Manualmente, con:
+
+```bash
+npm run validate:syntax
+```
+
+2. Dentro del build local:
+
+```bash
+npm run build
+```
+
+Porque el build incluye:
+
+```bash
+npm run validate:syntax && npm run lint && npm run validate:openapi && npm test
+```
+
+3. En GitHub Actions, antes de ESLint:
+
+```yaml
+- name: Validate JavaScript and JSON syntax
+  run: npm run validate:syntax
+```
+
+Esto significa que un error de sintaxis bloquea todo lo siguiente.
+
+### Diferencia entre sintaxis, lint y tests
+
+| Control | Que revisa | Ejemplo de error |
+| --- | --- | --- |
+| Sintaxis | Que JS/JSON esten bien escritos | Llave faltante, JSON invalido |
+| Lint | Reglas de calidad de codigo | Variable sin usar |
+| OpenAPI | Estructura minima del contrato | Falta `/health` |
+| Tests | Comportamiento real de la API | `/health` no responde `healthy` |
+
+Frase para exposicion:
+
+> "La validacion de sintaxis responde a la pregunta: el proyecto se puede leer? El lint responde: el codigo respeta reglas de calidad? Los tests responden: la API se comporta como esperamos?"
+
 ---
 
 ## 9. Explicacion profunda de los tests
@@ -545,6 +770,15 @@ const { describe, test } = require('node:test');
 const request = require('supertest');
 ```
 
+Tambien importan dos archivos del proyecto:
+
+```js
+const app = require('../src/app');
+const openApiSpec = require('../docs/openapi.json');
+```
+
+`app` es la aplicacion Express que se va a probar. `openApiSpec` es el contrato OpenAPI, usado para comparar datos del test con la especificacion real.
+
 ### node:test
 
 `node:test` es el test runner nativo de Node.js.
@@ -604,6 +838,212 @@ Esto evita problemas como:
 - servidor que queda corriendo;
 - tests lentos;
 - dependencia de `localhost`.
+
+### Estructura general del archivo de tests
+
+El archivo completo esta organizado asi:
+
+```js
+describe('API Tests', () => {
+  test('...', async () => {
+    // request
+    // asserts
+  });
+});
+```
+
+`describe` agrupa todos los tests relacionados con la API.
+
+`test` define un caso concreto. Cada caso tiene:
+
+1. una descripcion legible;
+2. una request con Supertest;
+3. varias aserciones con `assert`.
+
+La palabra `async` permite usar `await` para esperar la respuesta HTTP simulada.
+
+### Imports explicados linea por linea
+
+```js
+const assert = require('node:assert/strict');
+```
+
+Importa el modulo de aserciones estricto de Node. Sirve para comparar resultados esperados contra resultados reales.
+
+```js
+const { describe, test } = require('node:test');
+```
+
+Importa las funciones del test runner nativo:
+
+- `describe`: agrupa tests.
+- `test`: define un caso de prueba.
+
+```js
+const request = require('supertest');
+```
+
+Importa Supertest. Se usa para enviar requests a Express sin levantar un servidor real.
+
+```js
+const app = require('../src/app');
+```
+
+Importa la app Express. Esta app tiene las rutas `/`, `/health`, `/home`, `/openapi.json` y el 404 controlado.
+
+```js
+const openApiSpec = require('../docs/openapi.json');
+```
+
+Importa el contrato OpenAPI como objeto JavaScript. Se usa, por ejemplo, para verificar que la version que responde `/` coincida con la version documentada.
+
+### Primer test explicado: `GET /`
+
+Codigo:
+
+```js
+test('GET / returns correct response', async () => {
+  const res = await request(app).get('/');
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers['content-type'], /application\/json/);
+  assert.equal(res.body.status, 'ok');
+  assert.equal(res.body.message, 'CI/CD Demo API');
+  assert.equal(res.body.version, openApiSpec.info.version);
+});
+```
+
+Explicacion:
+
+- `request(app).get('/')`: simula una peticion HTTP GET a la raiz.
+- `await`: espera la respuesta.
+- `res.statusCode`: codigo HTTP recibido.
+- `assert.equal(res.statusCode, 200)`: exige que la API responda correctamente.
+- `assert.match(..., /application\/json/)`: verifica que la respuesta sea JSON.
+- `res.body.status`: lee el campo `status` del JSON.
+- `res.body.message`: lee el mensaje de la API.
+- `res.body.version`: lee la version expuesta por la API.
+- `openApiSpec.info.version`: toma la version desde el contrato OpenAPI.
+
+Este test comprueba que la API principal este viva y alineada con su contrato.
+
+### Segundo test explicado: `GET /health`
+
+Codigo:
+
+```js
+test('GET /health returns healthy', async () => {
+  const res = await request(app).get('/health');
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers['content-type'], /application\/json/);
+  assert.equal(res.body.status, 'healthy');
+  assert.equal(typeof res.body.uptime, 'number');
+});
+```
+
+Explicacion:
+
+- Hace una peticion a `/health`.
+- Verifica HTTP `200`.
+- Verifica que la respuesta sea JSON.
+- Verifica `status: healthy`.
+- Verifica que `uptime` sea un numero.
+
+Este test funciona como smoke test de la API. No prueba todo el sistema, pero confirma que el servicio responde y esta vivo.
+
+### Tercer test explicado: `GET /home`
+
+Codigo:
+
+```js
+test('GET /home returns the demo HTML page', async () => {
+  const res = await request(app).get('/home');
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers['content-type'], /text\/html/);
+  assert.match(res.text, /CI\/CD Pipeline Demo/);
+  assert.match(res.text, /OpenAPI/);
+  assert.match(res.text, /Vercel/);
+});
+```
+
+Explicacion:
+
+- Hace una peticion a `/home`.
+- Verifica que responda `200`.
+- Verifica que el contenido sea HTML.
+- `res.text` contiene el HTML como texto.
+- Busca textos clave dentro de la pagina.
+
+Este test evita que la pagina de exposicion se rompa o pierda contenido importante.
+
+No es un test visual de navegador, porque no renderiza la pagina como lo haria Chrome, pero valida que el endpoint HTML exista y entregue contenido correcto.
+
+### Cuarto test explicado: `GET /openapi.json`
+
+Codigo:
+
+```js
+test('GET /openapi.json exposes the API contract used by the app', async () => {
+  const res = await request(app).get('/openapi.json');
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.openapi, '3.0.3');
+  assert.ok(res.body.paths['/']);
+  assert.ok(res.body.paths['/health']);
+  assert.ok(res.body.paths['/home']);
+});
+```
+
+Explicacion:
+
+- Pide el contrato publicado por la API.
+- Verifica codigo `200`.
+- Verifica version OpenAPI `3.0.3`.
+- `assert.ok(...)` comprueba que existan rutas dentro del contrato.
+
+Este test se relaciona con Spec Driven Development porque valida que la API publique su especificacion.
+
+### Quinto test explicado: ruta inexistente
+
+Codigo:
+
+```js
+test('GET unknown route returns a JSON 404 response', async () => {
+  const res = await request(app).get('/missing-route');
+  assert.equal(res.statusCode, 404);
+  assert.match(res.headers['content-type'], /application\/json/);
+  assert.equal(res.body.status, 'not_found');
+  assert.match(res.body.message, /missing-route/);
+});
+```
+
+Explicacion:
+
+- Pide una ruta que no existe.
+- Verifica que el servidor responda `404`.
+- Verifica que el error sea JSON.
+- Verifica `status: not_found`.
+- Verifica que el mensaje mencione la ruta solicitada.
+
+Este test comprueba que los errores tambien estan controlados. En una API, no solo importan las respuestas exitosas: tambien importa que los errores sean claros y consistentes.
+
+### Que pasa si una asercion falla
+
+Ejemplo:
+
+```js
+assert.equal(res.statusCode, 200);
+```
+
+Si la API devuelve `500` en vez de `200`, esa linea falla.
+
+Consecuencia:
+
+1. Falla el test.
+2. Falla `npm test`.
+3. Falla el job `quality` de GitHub Actions.
+4. No corre Docker.
+5. No corre deploy a Vercel.
+
+Esto es una parte clave del CI/CD: un error detectado por tests impide que el codigo llegue a produccion.
 
 ---
 
