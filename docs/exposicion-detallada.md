@@ -670,240 +670,11 @@ npm.cmd test
 
 ## 11. Que tipo de tests son
 
-Los tests del proyecto son principalmente tests automatizados de API.
+Los tests del proyecto son principalmente tests automatizados de API e integracion liviana. Se llaman asi porque hacen requests HTTP contra la aplicacion Express y verifican codigos de estado, headers y cuerpos de respuesta.
 
-Tambien se pueden llamar:
+Tambien son tests funcionales porque validan comportamiento observable: que la API responda lo que se espera ante una peticion concreta.
 
-- tests de endpoints HTTP;
-- tests funcionales de API;
-- tests de integracion livianos;
-- smoke tests automatizados;
-- tests de contrato parcial.
-
-### Tipos de test que conviene conocer
-
-Para explicar bien el proyecto, es util distinguir varios tipos de pruebas. No todos se implementan en este repositorio, pero conocerlos ayuda a justificar el alcance.
-
-#### Test unitario
-
-Un test unitario prueba una unidad pequena de codigo de forma aislada. Esa unidad puede ser una funcion, un metodo o un modulo simple.
-
-Ejemplo conceptual:
-
-```text
-Una funcion calcularTotal(100, 0.21) debe devolver 121.
-```
-
-Caracteristicas:
-
-- Es muy rapido.
-- No deberia depender de red, base de datos ni servidor real.
-- Sirve para detectar errores en logica interna.
-- Normalmente usa mocks o datos falsos.
-
-En nuestro proyecto no hay muchos tests unitarios puros porque la logica principal no esta en funciones matematicas o reglas complejas, sino en endpoints HTTP.
-
-#### Test de integracion
-
-Un test de integracion verifica que varias partes del sistema funcionen correctamente juntas.
-
-Ejemplo:
-
-```text
-La app Express recibe una request, ejecuta la ruta correcta y devuelve JSON esperado.
-```
-
-Caracteristicas:
-
-- Prueba colaboracion entre componentes.
-- Puede incluir framework web, rutas, middlewares y respuestas.
-- Es mas realista que un test unitario.
-- Puede ser mas lento que un unitario, pero da mas confianza sobre el comportamiento real.
-
-Nuestros tests son de integracion livianos porque integran Express, rutas, respuestas HTTP, contrato OpenAPI y manejo de errores, pero no dependen de base de datos ni servicios externos.
-
-#### Test funcional
-
-Un test funcional verifica una funcionalidad desde el punto de vista del comportamiento esperado.
-
-Ejemplo:
-
-```text
-Cuando consulto GET /health, la API debe responder status healthy.
-```
-
-Caracteristicas:
-
-- Se enfoca en que la funcionalidad cumpla el requisito.
-- No se preocupa tanto por como esta implementada internamente.
-- Es facil de explicar porque se relaciona con casos de uso.
-
-Nuestros tests tambien son funcionales porque validan comportamientos observables: la raiz responde, el health check funciona, la pagina HTML existe, el contrato se publica y el 404 es controlado.
-
-#### Test de API
-
-Un test de API prueba endpoints HTTP directamente.
-
-Ejemplo:
-
-```text
-GET /openapi.json debe responder 200 y devolver un documento OpenAPI.
-```
-
-Caracteristicas:
-
-- Verifica codigos HTTP.
-- Verifica headers como `content-type`.
-- Verifica cuerpo de respuesta JSON o HTML.
-- Es ideal para backend y servicios REST.
-
-Este es el tipo de test mas representativo de nuestro proyecto. Usamos Supertest para hacer requests contra la app Express sin levantar un servidor real en un puerto.
-
-#### Smoke test
-
-Un smoke test es una prueba rapida y superficial que confirma que lo mas importante del sistema enciende y responde.
-
-El nombre viene de una idea simple: si al prender una maquina sale humo, ni siquiera vale la pena seguir probando. En software significa:
-
-```text
-Antes de hacer validaciones profundas, confirmo que la aplicacion arranca y responde algo basico.
-```
-
-Ejemplo:
-
-```text
-GET /health debe responder 200.
-```
-
-Caracteristicas:
-
-- Es corto y rapido.
-- No prueba todos los detalles.
-- Sirve para detectar fallos graves temprano.
-- Se usa mucho despues de un deploy o al levantar un contenedor.
-
-En nuestro proyecto hay smoke tests en dos niveles:
-
-1. En tests automatizados, `/health` confirma que la API esta viva.
-2. En Docker/GitHub Actions, se levanta la imagen y se consulta `/health` para confirmar que el contenedor responde.
-
-Frase para exposicion:
-
-> "El smoke test no busca probar todo el sistema; busca confirmar rapidamente que lo esencial funciona."
-
-#### Test de contrato
-
-Un test de contrato verifica que una API respete una especificacion acordada.
-
-En nuestro proyecto, el contrato esta en:
-
-```text
-docs/openapi.json
-```
-
-Y se publica en:
-
-```text
-GET /openapi.json
-```
-
-Caracteristicas:
-
-- Ayuda a mantener coherencia entre documentacion y codigo.
-- Evita que la API cambie sin actualizar su especificacion.
-- Es muy util cuando otros sistemas consumen la API.
-
-Nuestro proyecto tiene contrato OpenAPI y dos formas de validarlo:
-
-1. `npm run validate:openapi`, que revisa la estructura minima del archivo.
-2. El test `GET /openapi.json`, que verifica que la API publique el contrato y que incluya rutas esperadas.
-
-#### Test end-to-end o E2E
-
-Un test end-to-end prueba un flujo completo como lo haria un usuario final.
-
-Ejemplo:
-
-```text
-Abrir navegador, entrar a la web, completar formulario, enviar, ver resultado.
-```
-
-Caracteristicas:
-
-- Usa herramientas como Playwright, Cypress o Selenium.
-- Prueba el sistema desde la interfaz real.
-- Da mucha confianza, pero suele ser mas lento y fragil.
-
-Nuestro proyecto no implementa E2E completo porque es una API sencilla y no tiene una aplicacion frontend compleja. La pagina `/home` se prueba como respuesta HTML, pero no con navegador real.
-
-#### Test de regresion
-
-Un test de regresion busca asegurar que algo que ya funcionaba no se rompa con cambios nuevos.
-
-Ejemplo:
-
-```text
-Antes /health respondia healthy; despues de modificar la app debe seguir respondiendo healthy.
-```
-
-Caracteristicas:
-
-- Puede ser unitario, de integracion, API o E2E.
-- Su objetivo es evitar que errores viejos vuelvan.
-- Es clave en CI/CD.
-
-Nuestros tests funcionan tambien como tests de regresion: cada push vuelve a comprobar que endpoints importantes siguen funcionando.
-
-#### Test de carga o performance
-
-Un test de carga mide como se comporta la aplicacion con muchas requests o usuarios simultaneos.
-
-Ejemplo:
-
-```text
-Enviar 1000 requests por minuto y medir tiempo de respuesta.
-```
-
-Caracteristicas:
-
-- Evalua rendimiento.
-- Puede detectar cuellos de botella.
-- Se usa mas en proyectos productivos o con mucho trafico.
-
-Este proyecto no incluye tests de carga porque el objetivo de la evaluacion es CI/CD, no performance.
-
-#### Test de seguridad
-
-Un test de seguridad busca vulnerabilidades o malas configuraciones.
-
-Ejemplo:
-
-```text
-Revisar dependencias vulnerables o probar entradas maliciosas.
-```
-
-Caracteristicas:
-
-- Puede incluir auditoria de dependencias.
-- Puede probar headers, autenticacion, permisos o inyecciones.
-- Es importante en sistemas reales.
-
-En nuestro proyecto no hay una suite automatizada de seguridad. Se puede ejecutar `npm audit` como control manual de dependencias, pero no forma parte obligatoria del pipeline porque el foco principal de esta entrega es CI/CD, tests de API, Docker y deploy.
-
-### Resumen de tipos de test y relacion con el proyecto
-
-| Tipo de test | En que consiste | Esta en el proyecto? |
-| --- | --- | --- |
-| Unitario | Prueba una funcion aislada | No como foco principal |
-| Integracion | Prueba varias partes juntas | Si, con Express + rutas + respuestas |
-| Funcional | Verifica comportamiento esperado | Si |
-| API | Prueba endpoints HTTP | Si, es el foco principal |
-| Smoke test | Verifica rapidamente que lo esencial responde | Si, con `/health` y Docker |
-| Contrato | Verifica acuerdo API/documentacion | Si, con OpenAPI |
-| E2E | Prueba flujo completo en navegador | No |
-| Regresion | Evita romper algo que ya funcionaba | Si, cada test cumple ese rol |
-| Carga | Mide rendimiento bajo demanda | No |
-| Seguridad | Busca vulnerabilidades | No automatizado; se puede revisar manualmente con `npm audit` |
+La clasificacion especifica de cada caso se explica test por test en la seccion "Tests actuales uno por uno". Eso es mas claro para la exposicion porque permite decir no solo "que tipo de test usamos", sino tambien por que cada test pertenece a ese tipo.
 
 ### Por que no son tests unitarios puros
 
@@ -1234,6 +1005,20 @@ Actualmente hay 5 tests.
 
 ### Test 1: `GET /`
 
+Tipo de test:
+
+- Test de API.
+- Test funcional.
+- Test de integracion liviana.
+- Test de regresion.
+
+Por que:
+
+- Es de API porque hace una peticion HTTP `GET /` y valida la respuesta.
+- Es funcional porque comprueba el comportamiento esperado de la ruta principal.
+- Es de integracion liviana porque prueba Express, la ruta y la respuesta JSON trabajando juntos, sin base de datos ni servicios externos.
+- Es de regresion porque evita que un cambio futuro rompa la respuesta base de la API.
+
 Objetivo:
 
 Verificar que la API principal responda correctamente.
@@ -1251,6 +1036,22 @@ Importancia:
 Este test comprueba que la API base esta disponible y que la version del codigo coincide con la version del contrato.
 
 ### Test 2: `GET /health`
+
+Tipo de test:
+
+- Test de API.
+- Test funcional.
+- Smoke test.
+- Test de integracion liviana.
+- Test de regresion.
+
+Por que:
+
+- Es de API porque consulta el endpoint HTTP `/health`.
+- Es funcional porque valida que el health check devuelva el estado esperado.
+- Es smoke test porque confirma rapidamente que lo esencial del sistema esta vivo y responde.
+- Es de integracion liviana porque prueba la app Express y su ruta real sin levantar un servidor externo.
+- Es de regresion porque protege una ruta critica que tambien se usa para Docker y deploy.
 
 Objetivo:
 
@@ -1273,6 +1074,20 @@ Frase para exposicion:
 
 ### Test 3: `GET /home`
 
+Tipo de test:
+
+- Test de API.
+- Test funcional.
+- Test de integracion liviana.
+- Test de regresion.
+
+Por que:
+
+- Es de API porque hace una peticion HTTP a `/home`.
+- Es funcional porque valida que la pagina de demostracion exista y entregue contenido esperado.
+- Es de integracion liviana porque prueba Express, la ruta HTML y el contenido devuelto.
+- Es de regresion porque evita que la pantalla usada en la exposicion desaparezca o pierda textos clave.
+
 Objetivo:
 
 Verificar que la pagina visual de demostracion exista.
@@ -1290,6 +1105,22 @@ Importancia:
 No es una prueba visual completa, pero asegura que la pantalla que se muestra en la exposicion no desaparezca ni quede desactualizada.
 
 ### Test 4: `GET /openapi.json`
+
+Tipo de test:
+
+- Test de API.
+- Test funcional.
+- Test de contrato parcial.
+- Test de integracion liviana.
+- Test de regresion.
+
+Por que:
+
+- Es de API porque consulta el endpoint HTTP `/openapi.json`.
+- Es funcional porque verifica que la API publique documentacion tecnica consumible.
+- Es de contrato parcial porque comprueba que la especificacion OpenAPI exista, tenga version esperada e incluya rutas importantes.
+- Es de integracion liviana porque conecta la app Express con el archivo de especificacion publicado.
+- Es de regresion porque evita que un cambio futuro deje de exponer el contrato.
 
 Objetivo:
 
@@ -1314,6 +1145,20 @@ Endpoint probado:
 ```text
 GET /missing-route
 ```
+
+Tipo de test:
+
+- Test de API.
+- Test funcional negativo.
+- Test de integracion liviana.
+- Test de regresion.
+
+Por que:
+
+- Es de API porque hace una peticion HTTP a una ruta inexistente.
+- Es funcional negativo porque no prueba el camino feliz, sino el comportamiento esperado ante un error.
+- Es de integracion liviana porque valida el middleware/ruta de manejo de errores de Express y la respuesta JSON.
+- Es de regresion porque evita que la API vuelva a responder errores inconsistentes o HTML generico.
 
 Objetivo:
 
