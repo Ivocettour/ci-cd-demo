@@ -30,6 +30,186 @@ La idea principal es evitar que un cambio roto llegue a produccion. Si falla el 
 
 ---
 
+## Base teorica tomada del apunte
+
+El apunte de Ingenieria y Calidad ayuda a explicar que este proyecto no es solamente "una API subida a internet". Lo importante es mostrar un proceso de ingenieria de software: controlado, repetible, verificable y con feedback rapido.
+
+### Ingenieria de software aplicada
+
+La ingenieria de software busca construir software de forma sistematica y mantenible. En este proyecto eso se ve en decisiones concretas:
+
+- el codigo esta versionado en GitHub;
+- las dependencias se instalan de manera reproducible con `npm ci`;
+- la ejecucion local esta documentada;
+- el contrato OpenAPI esta guardado en el repositorio;
+- los tests se ejecutan siempre igual en local y CI;
+- el deploy no depende de pasos manuales desde una computadora personal.
+
+Frase para exposicion:
+
+> "No solo entregamos una aplicacion funcionando; entregamos un proceso para poder cambiarla, probarla y desplegarla con control."
+
+### Control de cambios y control de versiones
+
+El apunte remarca que el control de versiones permite registrar que cambio se hizo, quien lo hizo, cuando se hizo y por que. En nuestro proyecto eso esta representado por Git y GitHub.
+
+GitHub cumple varios roles:
+
+- guarda el historial de commits;
+- permite trabajar con ramas;
+- dispara el pipeline cuando hay un push o pull request;
+- conserva evidencia de cada ejecucion de CI/CD;
+- permite volver a una version anterior si algo sale mal.
+
+La estrategia elegida para este proyecto es simple:
+
+- `main` representa la rama estable y desplegable;
+- los cambios se pueden trabajar en ramas separadas;
+- un pull request permite revisar antes de integrar;
+- el pipeline corre tanto en pull request como en push a `main`;
+- el despliegue productivo solo queda habilitado para `main`.
+
+Esto se relaciona con la idea del apunte de trabajar con cambios pequenos. Cuanto mas chico es el cambio, mas facil es integrarlo, probarlo y corregirlo.
+
+Frase para exposicion:
+
+> "GitHub no se usa solo como almacenamiento: funciona como punto de control del cambio y como disparador del proceso de integracion."
+
+### Integracion Continua como practica
+
+El apunte plantea la Integracion Continua como una practica de desarrollo, no solamente como una herramienta. La idea es integrar cambios frecuentemente y verificar cada integracion mediante una build automatizada con pruebas.
+
+En nuestro proyecto, esa idea se implementa con GitHub Actions:
+
+```text
+push o pull request -> GitHub Actions -> quality -> docker -> deploy
+```
+
+La integracion continua se demuestra porque cada cambio pasa por:
+
+- instalacion limpia;
+- validacion de sintaxis;
+- analisis estatico;
+- validacion del contrato;
+- tests automatizados;
+- build local;
+- generacion de artefacto.
+
+El objetivo no es "tener un YAML", sino detectar errores lo antes posible. Si un error aparece en CI, se corrige antes de que llegue a produccion.
+
+Frase para exposicion:
+
+> "CI no es GitHub Actions por si solo; CI es la disciplina de integrar cambios pequenos y verificarlos automaticamente."
+
+### Pipeline y build
+
+El apunte diferencia pipeline y build. El pipeline es el conjunto completo de etapas por las que pasa el software. La build es una parte de ese pipeline.
+
+En este proyecto, el pipeline completo es:
+
+```text
+Repositorio -> CI -> sintaxis -> lint -> OpenAPI -> tests -> build -> Docker -> Vercel -> feedback
+```
+
+La build local se ejecuta con:
+
+```bash
+npm run build
+```
+
+En una aplicacion frontend, una build suele generar archivos estaticos. En nuestro backend Express, la build funciona como una compuerta de calidad:
+
+```text
+validate:syntax + lint + validate:openapi + test
+```
+
+Por eso, cuando decimos "build", no queremos decir solamente compilar. Queremos decir: "dejar evidencia de que el proyecto puede validarse de manera automatica".
+
+Frase para exposicion:
+
+> "En este proyecto la build es una barrera de calidad: si algo basico esta roto, no se construye Docker y no se despliega."
+
+### Feedback rapido
+
+El apunte destaca que uno de los objetivos principales de CI es generar retroalimentacion rapida. El equipo tiene que saber cuanto antes si la ultima integracion funciono o fallo.
+
+En nuestro proyecto hay tres niveles de feedback:
+
+| Nivel | Herramienta | Que informa |
+| --- | --- | --- |
+| CI | GitHub Actions | Si pasaron sintaxis, lint, OpenAPI, tests, build y Docker. |
+| Entrega | Vercel | Si el deploy quedo `Ready` o fallo. |
+| Aviso rapido | CallMeBot WhatsApp | Si el deploy productivo termino correctamente. |
+
+El mensaje de WhatsApp dice:
+
+```text
+todo funciona
+```
+
+Ese aviso no reemplaza al pipeline ni a los logs, pero muestra un mecanismo de feedback automatico, que es una parte importante de CI/CD.
+
+Frase para exposicion:
+
+> "El feedback no queda escondido en mi computadora: GitHub, Vercel y WhatsApp avisan el estado del proceso."
+
+### Entrega Continua y Despliegue Continuo
+
+El apunte diferencia Entrega Continua y Despliegue Continuo.
+
+Entrega Continua significa que el software queda siempre en un estado listo para ser desplegado. Despliegue Continuo significa que, ademas, cada cambio aprobado llega automaticamente a produccion.
+
+En nuestro proyecto estamos muy cerca de Despliegue Continuo para `main`, porque:
+
+- cada push a `main` dispara el pipeline;
+- si pasan los controles, se ejecuta deploy a Vercel;
+- si falla un test o validacion, no se despliega;
+- el entorno productivo queda publicado en Vercel.
+
+Tambien se puede explicar como Entrega Continua porque el proyecto queda preparado para entregar una version confiable en cualquier momento.
+
+Frase para exposicion:
+
+> "No subimos manualmente una carpeta a produccion. El despliegue queda automatizado y condicionado por la calidad del pipeline."
+
+### Verificacion y validacion
+
+En calidad de software se suele distinguir entre verificacion y validacion:
+
+- Verificacion: comprobar que el producto se esta construyendo correctamente.
+- Validacion: comprobar que el producto cumple su proposito y resulta util.
+
+En nuestro proyecto:
+
+| Concepto | Ejemplo en el proyecto |
+| --- | --- |
+| Verificacion | `validate:syntax`, ESLint, OpenAPI, tests automatizados, build Docker. |
+| Validacion | Probar `/health`, abrir `/home`, revisar la API desplegada en Vercel. |
+
+La verificacion mira mas el proceso tecnico. La validacion mira si lo que entregamos sirve para el objetivo: demostrar una API funcionando con CI/CD.
+
+Frase para exposicion:
+
+> "Verificamos que el codigo este bien construido y validamos que la API realmente responda como se espera."
+
+### Calidad como proceso, producto y personas
+
+El apunte remarca que la calidad no es solamente testing. En este proyecto se puede defender desde tres dimensiones:
+
+| Dimension | Como aparece en el proyecto |
+| --- | --- |
+| Calidad del proceso | Pipeline automatico, comandos documentados, Docker, deploy controlado. |
+| Calidad del producto | API con endpoints claros, contrato OpenAPI, errores JSON consistentes. |
+| Calidad de las personas/equipo | README, guia completa, exposicion, estrategia de ramas y feedback. |
+
+Los tests son importantes, pero no son toda la calidad. Tambien importan la reproducibilidad, la documentacion, el control de versiones, la automatizacion y la capacidad de corregir rapido.
+
+Frase para exposicion:
+
+> "Testing confirma parte de la calidad, pero la calidad se construye en todo el proceso: desde el commit hasta el deploy."
+
+---
+
 ## 2. Stack tecnologico
 
 El proyecto usa:
@@ -1171,12 +1351,26 @@ Los tests cubren:
 
 La estrategia de pruebas del proyecto esta pensada para una API pequena, sin base de datos y enfocada en demostrar CI/CD. Por eso se priorizan pruebas rapidas, automaticas y faciles de ejecutar en local, Docker y GitHub Actions.
 
-La estrategia se basa en cuatro ideas:
+La estrategia no intenta "tener todos los tipos de test posibles". Intenta cubrir lo mas importante para el riesgo real del proyecto. Como la aplicacion es una API Express simple, el mayor riesgo no esta en una formula matematica compleja, sino en que:
+
+- una ruta deje de responder;
+- el contrato OpenAPI quede desactualizado;
+- el JSON de configuracion se rompa;
+- el contenedor no arranque;
+- se despliegue una version fallada.
+
+Por eso la estrategia se basa en seis ideas:
 
 1. Fallar temprano.
 2. Probar comportamiento observable.
 3. Validar el contrato de la API.
-4. Bloquear el despliegue si algo importante falla.
+4. Usar smoke tests para confirmar disponibilidad.
+5. Mantener pruebas rapidas y repetibles.
+6. Bloquear el despliegue si algo importante falla.
+
+Frase para exposicion:
+
+> "No agregamos pruebas al azar. Elegimos pruebas alineadas con los riesgos reales de una API chica que debe integrarse y desplegarse automaticamente."
 
 ### 14.1 Fallar temprano
 
@@ -1201,6 +1395,8 @@ Frase para exposicion:
 
 > "La estrategia busca detectar primero los errores mas baratos de encontrar y dejar para despues los pasos mas costosos."
 
+Esto se conecta con la idea del apunte de detectar fallos cuanto antes. Un error encontrado antes del deploy es mas barato de corregir que un error encontrado por un usuario en produccion.
+
 ### 14.2 Probar desde afuera
 
 Como el proyecto es una API, la estrategia no se centra en funciones internas aisladas. Se centra en probar la API como la consume un cliente.
@@ -1221,6 +1417,8 @@ Ese enfoque valida:
 - errores.
 
 Esto da confianza porque se prueba el comportamiento observable, no solo detalles internos.
+
+Esta decision tambien evita tests fragiles. Si manana se reordena internamente el codigo de `src/app.js`, los tests no deberian fallar mientras la API siga respondiendo igual. Eso es sano: el test protege el contrato externo, no una implementacion puntual.
 
 ### 14.3 Piramide de pruebas adaptada al proyecto
 
@@ -1243,6 +1441,19 @@ Sin E2E de navegador porque no hay frontend complejo
 
 No agregamos tests unitarios artificiales porque no hay logica de negocio compleja que lo justifique. Crear tests unitarios forzados solo para tenerlos haria el proyecto menos claro.
 
+La piramide queda adaptada asi:
+
+| Capa | Herramienta | Objetivo |
+| --- | --- | --- |
+| Sintaxis | `node --check` y `JSON.parse` | Confirmar que JS y JSON se pueden interpretar. |
+| Calidad estatica | ESLint | Detectar problemas de estilo, malas practicas o variables mal usadas. |
+| Contrato | `validate-openapi` y `/openapi.json` | Confirmar que la API documentada existe y se publica. |
+| API/integracion | `node:test` + Supertest | Probar endpoints reales sin levantar servidor externo. |
+| Smoke Docker | `docker compose` / health check | Confirmar que la imagen arranca y responde. |
+| Deploy | Vercel condicionado por CI | Publicar solo si todo lo anterior paso. |
+
+Esta estructura cubre desde errores muy simples hasta errores de empaquetado y entrega.
+
 ### 14.4 Criterios elegidos para testear
 
 Se eligieron endpoints que representan partes importantes del sistema:
@@ -1256,6 +1467,16 @@ Se eligieron endpoints que representan partes importantes del sistema:
 | `/missing-route` | Verifica manejo de errores 404 en JSON. |
 | `validate:syntax` | Detecta JS o JSON invalido antes de ejecutar pasos caros. |
 | `validate:openapi` | Evita que el contrato quede incompleto o roto. |
+
+Cada prueba tiene una razon concreta:
+
+- `/` demuestra que la API base esta disponible.
+- `/health` sirve para monitoreo, Docker y smoke test.
+- `/home` ayuda a la exposicion y verifica que la pagina visual no desaparezca.
+- `/openapi.json` une codigo y especificacion.
+- `/missing-route` valida que tambien los errores sean consistentes.
+
+Esto es importante porque una API no solo debe responder bien cuando todo sale perfecto; tambien debe responder de forma controlada cuando el cliente pide algo incorrecto.
 
 ### 14.5 Que pasa cuando falla una prueba
 
@@ -1278,6 +1499,12 @@ Ejemplo:
 
 Esto es importante porque convierte los tests en una barrera real de calidad, no solo en una formalidad.
 
+Este comportamiento es intencional. Si el pipeline permitiera desplegar aunque falle un test, los tests serian solo informativos. En este proyecto son una compuerta: para llegar a Vercel, el cambio primero tiene que demostrar que funciona.
+
+Frase para exposicion:
+
+> "Los tests no estan de adorno. Tienen poder de decision: si fallan, no hay deploy."
+
 ### 14.6 Por que esta estrategia es adecuada
 
 Es adecuada porque:
@@ -1287,10 +1514,20 @@ Es adecuada porque:
 - se ejecuta igual en local y CI;
 - cubre endpoints criticos;
 - valida contrato y comportamiento;
+- detecta errores de configuracion;
+- confirma que Docker puede ejecutar la app;
 - permite explicar claramente que se prueba;
 - bloquea el despliegue si hay fallos.
 
 Para una evaluacion de CI/CD, esta estrategia muestra lo esencial: automatizacion, repetibilidad, feedback rapido y proteccion antes de produccion.
+
+Tambien muestra una idea clave de calidad: no se espera al final para probar. La calidad se incorpora al flujo completo:
+
+```text
+codigo -> sintaxis -> lint -> contrato -> tests -> build -> Docker -> deploy
+```
+
+Cada etapa aporta una evidencia distinta. Ninguna etapa por si sola garantiza todo, pero juntas reducen mucho el riesgo.
 
 ### 14.7 Posibles mejoras futuras
 
