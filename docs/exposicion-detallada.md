@@ -30,7 +30,7 @@ La idea principal es evitar que un cambio roto llegue a produccion. Si falla el 
 
 ---
 
-## Base teorica tomada del apunte
+## 2. Base teorica tomada del apunte
 
 El apunte de Ingenieria y Calidad ayuda a explicar que este proyecto no es solamente "una API subida a internet". Lo importante es mostrar un proceso de ingenieria de software: controlado, repetible, verificable y con feedback rapido.
 
@@ -82,10 +82,11 @@ El apunte plantea la Integracion Continua como una practica de desarrollo, no so
 En nuestro proyecto, esa idea se implementa con GitHub Actions:
 
 ```text
-push o pull request -> GitHub Actions -> quality -> docker -> deploy
+push o pull request -> GitHub Actions -> quality -> docker
+push a main aprobado -> deploy a Vercel
 ```
 
-La integracion continua se demuestra porque cada cambio pasa por:
+La integracion continua se demuestra porque cada cambio pasa por controles automaticos. El despliegue queda reservado para los push a `main` que ya pasaron esos controles.
 
 - instalacion limpia;
 - validacion de sintaxis;
@@ -210,7 +211,7 @@ Frase para exposicion:
 
 ---
 
-## 2. Stack tecnologico
+## 3. Stack tecnologico
 
 El proyecto usa:
 
@@ -230,7 +231,7 @@ La eleccion es coherente porque el proyecto es una API simple. No se usa un fram
 
 ---
 
-## 3. Estructura importante del repositorio
+## 4. Estructura importante del repositorio
 
 Archivos principales:
 
@@ -264,7 +265,7 @@ Explicacion:
 
 ---
 
-## 4. Funcionamiento de la API
+## 5. Funcionamiento de la API
 
 Endpoints:
 
@@ -306,7 +307,7 @@ Ejemplo de ruta inexistente:
 
 ---
 
-## 5. Explicacion de la pagina visual
+## 6. Explicacion de la pagina visual
 
 La ruta `/home` muestra una pagina HTML de demostracion. Sirve para que la exposicion no dependa solamente de respuestas JSON.
 
@@ -325,7 +326,7 @@ Esto ayuda durante la presentacion porque se puede abrir la URL desplegada en Ve
 
 ---
 
-## 6. Que es CI en este proyecto
+## 7. Que es CI en este proyecto
 
 CI significa Integracion Continua.
 
@@ -351,7 +352,7 @@ Frase para exposicion:
 
 ---
 
-## 7. Que es CD en este proyecto
+## 8. Que es CD en este proyecto
 
 CD significa Entrega Continua o Despliegue Continuo.
 
@@ -386,7 +387,7 @@ Tambien se agrego feedback por WhatsApp usando CallMeBot. Este feedback no reemp
 
 ---
 
-## 8. Validacion de sintaxis
+## 9. Validacion de sintaxis
 
 Ademas de tests funcionales, el proyecto tiene una validacion explicita de sintaxis:
 
@@ -643,7 +644,7 @@ Frase para exposicion:
 
 ---
 
-## 9. Explicacion profunda de los tests
+## 10. Explicacion profunda de los tests
 
 Esta es una parte muy importante para defender el proyecto.
 
@@ -667,7 +668,7 @@ npm.cmd test
 
 ---
 
-## 10. Que tipo de tests son
+## 11. Que tipo de tests son
 
 Los tests del proyecto son principalmente tests automatizados de API.
 
@@ -887,7 +888,7 @@ Caracteristicas:
 - Puede probar headers, autenticacion, permisos o inyecciones.
 - Es importante en sistemas reales.
 
-En nuestro proyecto hay una base simple de seguridad al usar `npm audit` durante validaciones manuales, pero no se implemento un suite avanzado de seguridad porque esta fuera del alcance principal.
+En nuestro proyecto no hay una suite automatizada de seguridad. Se puede ejecutar `npm audit` como control manual de dependencias, pero no forma parte obligatoria del pipeline porque el foco principal de esta entrega es CI/CD, tests de API, Docker y deploy.
 
 ### Resumen de tipos de test y relacion con el proyecto
 
@@ -902,7 +903,7 @@ En nuestro proyecto hay una base simple de seguridad al usar `npm audit` durante
 | E2E | Prueba flujo completo en navegador | No |
 | Regresion | Evita romper algo que ya funcionaba | Si, cada test cumple ese rol |
 | Carga | Mide rendimiento bajo demanda | No |
-| Seguridad | Busca vulnerabilidades | Basico/manual, no suite completa |
+| Seguridad | Busca vulnerabilidades | No automatizado; se puede revisar manualmente con `npm audit` |
 
 ### Por que no son tests unitarios puros
 
@@ -940,7 +941,7 @@ Sin embargo, si prueban el comportamiento externo de la API, que es lo mas impor
 
 ---
 
-## 11. Como funcionan tecnicamente los tests
+## 12. Como funcionan tecnicamente los tests
 
 Los tests usan tres herramientas:
 
@@ -1227,7 +1228,7 @@ Esto es una parte clave del CI/CD: un error detectado por tests impide que el co
 
 ---
 
-## 12. Tests actuales uno por uno
+## 13. Tests actuales uno por uno
 
 Actualmente hay 5 tests.
 
@@ -1331,7 +1332,7 @@ Esto mejora la calidad de la API. En vez de devolver una respuesta generica o HT
 
 ---
 
-## 13. Que cubren los tests
+## 14. Que cubren los tests
 
 Los tests cubren:
 
@@ -1347,7 +1348,7 @@ Los tests cubren:
 
 ---
 
-## 14. Estrategia de pruebas del proyecto
+## 15. Estrategia de pruebas del proyecto
 
 La estrategia de pruebas del proyecto esta pensada para una API pequena, sin base de datos y enfocada en demostrar CI/CD. Por eso se priorizan pruebas rapidas, automaticas y faciles de ejecutar en local, Docker y GitHub Actions.
 
@@ -1372,7 +1373,7 @@ Frase para exposicion:
 
 > "No agregamos pruebas al azar. Elegimos pruebas alineadas con los riesgos reales de una API chica que debe integrarse y desplegarse automaticamente."
 
-### 14.1 Fallar temprano
+### 15.1 Fallar temprano
 
 El pipeline ejecuta primero controles baratos y rapidos.
 
@@ -1397,7 +1398,7 @@ Frase para exposicion:
 
 Esto se conecta con la idea del apunte de detectar fallos cuanto antes. Un error encontrado antes del deploy es mas barato de corregir que un error encontrado por un usuario en produccion.
 
-### 14.2 Probar desde afuera
+### 15.2 Probar desde afuera
 
 Como el proyecto es una API, la estrategia no se centra en funciones internas aisladas. Se centra en probar la API como la consume un cliente.
 
@@ -1420,7 +1421,7 @@ Esto da confianza porque se prueba el comportamiento observable, no solo detalle
 
 Esta decision tambien evita tests fragiles. Si manana se reordena internamente el codigo de `src/app.js`, los tests no deberian fallar mientras la API siga respondiendo igual. Eso es sano: el test protege el contrato externo, no una implementacion puntual.
 
-### 14.3 Piramide de pruebas adaptada al proyecto
+### 15.3 Piramide de pruebas adaptada al proyecto
 
 En un sistema grande suele hablarse de piramide de pruebas:
 
@@ -1454,7 +1455,7 @@ La piramide queda adaptada asi:
 
 Esta estructura cubre desde errores muy simples hasta errores de empaquetado y entrega.
 
-### 14.4 Criterios elegidos para testear
+### 15.4 Criterios elegidos para testear
 
 Se eligieron endpoints que representan partes importantes del sistema:
 
@@ -1478,7 +1479,7 @@ Cada prueba tiene una razon concreta:
 
 Esto es importante porque una API no solo debe responder bien cuando todo sale perfecto; tambien debe responder de forma controlada cuando el cliente pide algo incorrecto.
 
-### 14.5 Que pasa cuando falla una prueba
+### 15.5 Que pasa cuando falla una prueba
 
 La estrategia esta conectada al pipeline.
 
@@ -1505,7 +1506,7 @@ Frase para exposicion:
 
 > "Los tests no estan de adorno. Tienen poder de decision: si fallan, no hay deploy."
 
-### 14.6 Por que esta estrategia es adecuada
+### 15.6 Por que esta estrategia es adecuada
 
 Es adecuada porque:
 
@@ -1529,7 +1530,7 @@ codigo -> sintaxis -> lint -> contrato -> tests -> build -> Docker -> deploy
 
 Cada etapa aporta una evidencia distinta. Ninguna etapa por si sola garantiza todo, pero juntas reducen mucho el riesgo.
 
-### 14.7 Posibles mejoras futuras
+### 15.7 Posibles mejoras futuras
 
 Si el proyecto creciera, se podria sumar:
 
@@ -1544,7 +1545,7 @@ No se agregan ahora para evitar complejidad innecesaria. La estrategia actual es
 
 ---
 
-## 15. Que no cubren los tests
+## 16. Que no cubren los tests
 
 Los tests no cubren:
 
@@ -1563,7 +1564,7 @@ Frase para exposicion:
 
 ---
 
-## 16. Resultado esperado de tests
+## 17. Resultado esperado de tests
 
 Al ejecutar:
 
@@ -1603,7 +1604,7 @@ Ademas, el job de deploy tiene `success()` como condicion explicita. Eso refuerz
 
 ---
 
-## 17. Validacion OpenAPI
+## 18. Validacion OpenAPI
 
 Ademas de tests, el proyecto tiene un validador del contrato.
 
@@ -1636,27 +1637,28 @@ Esto suma una practica de Spec Driven Development, porque el contrato no queda c
 
 ---
 
-## 18. Build local
+## 19. Build local
 
 El build local esta definido asi:
 
 ```json
-"build": "npm run lint && npm run validate:openapi && npm test"
+"build": "npm run validate:syntax && npm run lint && npm run validate:openapi && npm test"
 ```
 
 Eso significa que el build no compila una app frontend. En este backend, el build funciona como una compuerta de calidad.
 
 Orden:
 
-1. ESLint.
-2. Validacion OpenAPI.
-3. Tests automatizados.
+1. Validacion de sintaxis JavaScript y JSON.
+2. ESLint.
+3. Validacion OpenAPI.
+4. Tests automatizados.
 
 Si cualquiera falla, el build falla.
 
 ---
 
-## 19. Docker
+## 20. Docker
 
 Docker se usa para demostrar que la app puede empaquetarse y ejecutarse de forma reproducible.
 
@@ -1671,7 +1673,7 @@ La etapa `builder` ejecuta:
 npm run build
 ```
 
-Eso significa que Docker tambien valida lint, OpenAPI y tests.
+Eso significa que Docker tambien valida sintaxis, lint, OpenAPI y tests antes de construir la imagen final.
 
 Docker Compose agrega un healthcheck contra:
 
@@ -1683,7 +1685,7 @@ Esto demuestra que el contenedor no solo se construye, sino que responde.
 
 ---
 
-## 20. GitHub Actions
+## 21. GitHub Actions
 
 El workflow esta en:
 
@@ -1703,6 +1705,7 @@ Jobs:
 Valida:
 
 - dependencias;
+- sintaxis JavaScript y JSON;
 - lint;
 - OpenAPI;
 - tests;
@@ -1725,11 +1728,13 @@ Despliega a Vercel si:
 - la rama es `main`;
 - existen los secrets de Vercel.
 
+Si los secrets de Vercel no estan configurados, el job no rompe el pipeline: muestra una advertencia y saltea el deploy. Esto evita inventar credenciales y mantiene el repositorio demostrable.
+
 Despues del deploy, puede enviar una notificacion por WhatsApp usando CallMeBot. Para evitar falsos positivos, el mensaje se manda solo si el paso de Vercel termino correctamente.
 
 ---
 
-## 21. Vercel
+## 22. Vercel
 
 Vercel despliega el proyecto como una funcion serverless.
 
@@ -1761,7 +1766,7 @@ Incluye:
 
 ---
 
-## 22. Secretos de Vercel
+## 23. Secretos de Vercel
 
 Para deploy desde GitHub Actions se necesitan:
 
@@ -1777,11 +1782,11 @@ No se guardan credenciales en el repositorio.
 
 ---
 
-## 23. Guion breve para exposicion
+## 24. Guion breve para exposicion
 
 ### Inicio
 
-> "Este proyecto demuestra un flujo CI/CD completo sobre una API Express. Cada cambio subido a GitHub pasa por analisis, validacion de contrato, tests, build, Docker y deploy a Vercel."
+> "Este proyecto demuestra un flujo CI/CD completo sobre una API Express. Cada cambio subido a GitHub pasa por analisis, validacion de contrato, tests, build y Docker. Cuando el cambio llega aprobado a main, se despliega en Vercel."
 
 ### Mostrar arquitectura
 
@@ -1821,7 +1826,7 @@ npm test
 npm run build
 ```
 
-> "El build local corre lint, valida OpenAPI y ejecuta tests. Si algo falla, el pipeline se detiene."
+> "El build local valida sintaxis, corre lint, valida OpenAPI y ejecuta tests. Si algo falla, el pipeline se detiene."
 
 ### Mostrar workflow
 
@@ -1848,7 +1853,7 @@ Probar:
 
 ---
 
-## 24. Preguntas que pueden hacer
+## 25. Preguntas que pueden hacer
 
 ### Que tipo de tests son?
 
@@ -1884,7 +1889,7 @@ Sirve como contrato de la API. Documenta rutas y respuestas esperadas. En este p
 
 ---
 
-## 25. Comandos para practicar antes de exponer
+## 26. Comandos para practicar antes de exponer
 
 ```bash
 npm ci
@@ -1922,6 +1927,6 @@ npm.cmd run build
 
 ---
 
-## 26. Cierre recomendado
+## 27. Cierre recomendado
 
 > "El valor del proyecto no esta en que la API sea grande, sino en que el proceso es profesional: cada cambio se valida automaticamente, se prueba, se empaqueta, genera artefactos y se despliega en Vercel. Eso es justamente lo que busca CI/CD: reducir errores manuales y aumentar confianza en cada entrega."
