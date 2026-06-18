@@ -1167,7 +1167,147 @@ Los tests cubren:
 
 ---
 
-## 14. Que no cubren los tests
+## 14. Estrategia de pruebas del proyecto
+
+La estrategia de pruebas del proyecto esta pensada para una API pequena, sin base de datos y enfocada en demostrar CI/CD. Por eso se priorizan pruebas rapidas, automaticas y faciles de ejecutar en local, Docker y GitHub Actions.
+
+La estrategia se basa en cuatro ideas:
+
+1. Fallar temprano.
+2. Probar comportamiento observable.
+3. Validar el contrato de la API.
+4. Bloquear el despliegue si algo importante falla.
+
+### 14.1 Fallar temprano
+
+El pipeline ejecuta primero controles baratos y rapidos.
+
+Orden:
+
+```text
+validate:syntax -> lint -> validate:openapi -> test -> build -> docker -> deploy
+```
+
+Esto significa que si hay un error simple, por ejemplo un JSON mal escrito, no se pierde tiempo ejecutando Docker o deploy.
+
+Ejemplo:
+
+- Si `vercel.json` tiene una coma de mas, falla `validate:syntax`.
+- Si una variable esta mal usada, falla `lint`.
+- Si falta `/health` en OpenAPI, falla `validate:openapi`.
+- Si `/health` no responde `healthy`, falla `npm test`.
+
+Frase para exposicion:
+
+> "La estrategia busca detectar primero los errores mas baratos de encontrar y dejar para despues los pasos mas costosos."
+
+### 14.2 Probar desde afuera
+
+Como el proyecto es una API, la estrategia no se centra en funciones internas aisladas. Se centra en probar la API como la consume un cliente.
+
+Por eso usamos Supertest:
+
+```js
+const res = await request(app).get('/health');
+```
+
+Ese enfoque valida:
+
+- rutas reales;
+- codigos HTTP;
+- headers;
+- JSON;
+- HTML;
+- errores.
+
+Esto da confianza porque se prueba el comportamiento observable, no solo detalles internos.
+
+### 14.3 Piramide de pruebas adaptada al proyecto
+
+En un sistema grande suele hablarse de piramide de pruebas:
+
+```text
+Muchos tests unitarios
+Menos tests de integracion
+Pocos tests end-to-end
+```
+
+En este proyecto la piramide se adapta al alcance:
+
+```text
+Validaciones automaticas: sintaxis, lint, OpenAPI
+Tests de API/integracion liviana: endpoints Express
+Smoke tests: /health y Docker
+Sin E2E de navegador porque no hay frontend complejo
+```
+
+No agregamos tests unitarios artificiales porque no hay logica de negocio compleja que lo justifique. Crear tests unitarios forzados solo para tenerlos haria el proyecto menos claro.
+
+### 14.4 Criterios elegidos para testear
+
+Se eligieron endpoints que representan partes importantes del sistema:
+
+| Endpoint/control | Motivo |
+| --- | --- |
+| `/` | Verifica que la API base responde y coincide con la version del contrato. |
+| `/health` | Sirve como smoke test y health check para Docker/deploy. |
+| `/home` | Valida la pagina visual que se muestra en la exposicion. |
+| `/openapi.json` | Verifica que el contrato este publicado. |
+| `/missing-route` | Verifica manejo de errores 404 en JSON. |
+| `validate:syntax` | Detecta JS o JSON invalido antes de ejecutar pasos caros. |
+| `validate:openapi` | Evita que el contrato quede incompleto o roto. |
+
+### 14.5 Que pasa cuando falla una prueba
+
+La estrategia esta conectada al pipeline.
+
+Si falla cualquier prueba o validacion:
+
+```text
+falla quality -> no corre docker -> no corre deploy
+```
+
+Ejemplo:
+
+1. Se rompe `/health`.
+2. Falla el test de `/health`.
+3. Falla `npm test`.
+4. Falla el job `quality`.
+5. No se construye imagen Docker.
+6. No se despliega en Vercel.
+
+Esto es importante porque convierte los tests en una barrera real de calidad, no solo en una formalidad.
+
+### 14.6 Por que esta estrategia es adecuada
+
+Es adecuada porque:
+
+- es rapida;
+- no requiere servicios externos;
+- se ejecuta igual en local y CI;
+- cubre endpoints criticos;
+- valida contrato y comportamiento;
+- permite explicar claramente que se prueba;
+- bloquea el despliegue si hay fallos.
+
+Para una evaluacion de CI/CD, esta estrategia muestra lo esencial: automatizacion, repetibilidad, feedback rapido y proteccion antes de produccion.
+
+### 14.7 Posibles mejoras futuras
+
+Si el proyecto creciera, se podria sumar:
+
+- tests unitarios para logica de negocio real;
+- tests E2E con Playwright si hubiera frontend interactivo;
+- validacion completa de OpenAPI con una herramienta externa;
+- tests de carga para medir rendimiento;
+- tests de seguridad;
+- coverage report.
+
+No se agregan ahora para evitar complejidad innecesaria. La estrategia actual esta alineada con el tamano real del proyecto.
+
+---
+
+## 15. Que no cubren los tests
 
 Los tests no cubren:
 
@@ -1186,7 +1326,7 @@ Frase para exposicion:
 
 ---
 
-## 15. Resultado esperado de tests
+## 16. Resultado esperado de tests
 
 Al ejecutar:
 
@@ -1226,7 +1366,7 @@ Ademas, el job de deploy tiene `success()` como condicion explicita. Eso refuerz
 
 ---
 
-## 16. Validacion OpenAPI
+## 17. Validacion OpenAPI
 
 Ademas de tests, el proyecto tiene un validador del contrato.
 
@@ -1259,7 +1399,7 @@ Esto suma una practica de Spec Driven Development, porque el contrato no queda c
 
 ---
 
-## 17. Build local
+## 18. Build local
 
 El build local esta definido asi:
 
@@ -1279,7 +1419,7 @@ Si cualquiera falla, el build falla.
 
 ---
 
-## 18. Docker
+## 19. Docker
 
 Docker se usa para demostrar que la app puede empaquetarse y ejecutarse de forma reproducible.
 
@@ -1306,7 +1446,7 @@ Esto demuestra que el contenedor no solo se construye, sino que responde.
 
 ---
 
-## 19. GitHub Actions
+## 20. GitHub Actions
 
 El workflow esta en:
 
@@ -1352,7 +1492,7 @@ Despues del deploy, puede enviar una notificacion por WhatsApp usando CallMeBot.
 
 ---
 
-## 20. Vercel
+## 21. Vercel
 
 Vercel despliega el proyecto como una funcion serverless.
 
@@ -1384,7 +1524,7 @@ Incluye:
 
 ---
 
-## 21. Secretos de Vercel
+## 22. Secretos de Vercel
 
 Para deploy desde GitHub Actions se necesitan:
 
@@ -1400,7 +1540,7 @@ No se guardan credenciales en el repositorio.
 
 ---
 
-## 22. Guion breve para exposicion
+## 23. Guion breve para exposicion
 
 ### Inicio
 
@@ -1471,7 +1611,7 @@ Probar:
 
 ---
 
-## 23. Preguntas que pueden hacer
+## 24. Preguntas que pueden hacer
 
 ### Que tipo de tests son?
 
@@ -1507,7 +1647,7 @@ Sirve como contrato de la API. Documenta rutas y respuestas esperadas. En este p
 
 ---
 
-## 24. Comandos para practicar antes de exponer
+## 25. Comandos para practicar antes de exponer
 
 ```bash
 npm ci
@@ -1545,6 +1685,6 @@ npm.cmd run build
 
 ---
 
-## 25. Cierre recomendado
+## 26. Cierre recomendado
 
 > "El valor del proyecto no esta en que la API sea grande, sino en que el proceso es profesional: cada cambio se valida automaticamente, se prueba, se empaqueta, genera artefactos y se despliega en Vercel. Eso es justamente lo que busca CI/CD: reducir errores manuales y aumentar confianza en cada entrega."
