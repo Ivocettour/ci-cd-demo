@@ -1,7 +1,7 @@
 const express = require('express');
 const openApiSpec = require('../docs/openapi.json');
 
-const app = express();
+cont app = express();
 
 app.get('/', (req, res) => {
   res.json({
